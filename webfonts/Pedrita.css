@@ -1,0 +1,28 @@
+/**
+ * @license
+ * MyFonts Webfont Build ID 3887062, 2020-04-04T01:38:12-0400
+ * 
+ * The fonts listed in this notice are subject to the End User License
+ * Agreement(s) entered into by the website owner. All other parties are 
+ * explicitly restricted from using the Licensed Webfonts(s).
+ * 
+ * You may obtain a valid license at the URLs below.
+ * 
+ * Webfont: Pedrita by PintassilgoPrints
+ * URL: https://www.myfonts.com/fonts/pintassilgo/pedrita/regular/
+ * Copyright: By PintassilgoPrints, 2018. All rights reserved. http://www.pintassilgoprints.com
+ * 
+ * 
+ * 
+ * © 2020 MyFonts Inc
+*/
+
+
+/* @import must be at top of file, otherwise CSS will not work */
+/* @import url("//hello.myfonts.net/count/3b4fd6"); */
+
+@font-face {
+  src: url('Pedrita/font.eot');
+  font-family: 'Pedrita';
+  src: url('Pedrita/font.woff2') format('woff2'), url('Pedrita/font.woff') format('woff'), url('Pedrita/font.eot?#iefix') format('embedded-opentype'), url('Pedrita/font.ttf') format('truetype');
+}

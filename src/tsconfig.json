@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "pretty": true,
+        "strict": true,
+        "alwaysStrict": true,
+        "declaration": true,
+        "sourceMap": true,
+        "target": "ES2015",
+        "lib": ["ES2015", "DOM"],
+        "outFile": "game.js"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

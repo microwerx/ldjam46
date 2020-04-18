@@ -1,0 +1,134 @@
+.Pedrita {
+    font-family: Pedrita;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --xor-black: #000000;
+    --xor-gray33: #555555;
+    --xor-gray67: #AAAAAA;
+    --xor-white: #FFFFFF;
+    --xor-red: #FF0000;
+    --xor-orange: #E47200;
+    --xor-yellow: #E4E400;
+    --xor-green: #00FF00;
+    --xor-cyan: #00B4B4;
+    --xor-azure: #0072E4;
+    --xor-blue: #0000FF;
+    --xor-violet: #7200E4;
+    --xor-rose: #E40072;
+    --xor-brown: #7F3F00;
+    --xor-gold: #D4AB38;
+    --xor-forestgreen: #3F7F3F;
+}
+
+body {
+    background: var(--xor-white);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: Pedrita;
+    color: var(--xor-gray33);
+    font-size: 1em;
+    line-height: 100%;
+}
+
+h1 {
+    font-size: 2em;
+    padding: 0em;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: black;
+}
+
+.game {
+    max-width: 640px;
+    border-radius: 4px;
+    margin: auto;
+    background: #f7f7f7;
+}
+
+.log {
+    font-family: PragmataPro, monospace;
+    font-size: 0.5em;
+}
+
+.red {
+    color: #f00;
+}
+
+.xor-black {
+    color: #000000
+}
+
+.xor-gray33 {
+    color: #555555
+}
+
+.xor-gray67 {
+    color: #AAAAAA
+}
+
+.xor-white {
+    color: #FFFFFF
+}
+
+.xor-red {
+    color: #FF0000
+}
+
+.xor-orange {
+    color: #E47200
+}
+
+.xor-yellow {
+    color: #E4E400
+}
+
+.xor-green {
+    color: #00FF00
+}
+
+.xor-cyan {
+    color: #00B4B4
+}
+
+.xor-azure {
+    color: #0072E4
+}
+
+.xor-blue {
+    color: #0000FF
+}
+
+.xor-violet {
+    color: #7200E4
+}
+
+.xor-rose {
+    color: #E40072
+}
+
+.xor-brown {
+    color: #7F3F00
+}
+
+.xor-gold {
+    color: #D4AB38
+}
+
+.xor-forestgreen {
+    color: #3F7F3F
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ludum Dare 46 by microwerx</title>
+    <link rel="stylesheet" type="text/css" href="webfonts/Pedrita.css" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script>
+        function toggle(id) {
+            let e = document.getElementById(id);
+            if (e) {
+                e.style.display = e.style.display === 'none' ? '' : 'none';
+            }
+        }
+    </script>
+
+</head>
+
+<body>
+    <div class="centered game">
+        <h1 class="xor-gray33">Atlantoid Plantoid</h1>
+        <h2 class="xor-gray33">a game by <span class="xor-red">microwerx</span> for Ludum Dare 46</h2>
+        <hr />
+        <div class="cell-block-clear" style="display:table">
+            <div id="game" class="centered largearea" style="width: 640px; height:512px; background: #333;">
+                <button style="display: table-cell;vertical-align: middle; margin: 0 auto; width:128px; height:64px;"
+                    onclick="startGame()">Start
+                    Game</button>
+            </div>
+        </div>
+        <div class="cell-block-light" style="width: 384px">
+            <h5 onclick='toggle(" controls")'>Controls</h5>
+            <div id="controls"></div>
+        </div>
+        <h2>Help</h2>
+        To play, use the WASD keys to move around.
+        <h5 onclick='toggle("log")'>Log</h5>
+        <div id='log' class='log'>Log items here...</div>
+    </div>
+
+
+    <script src="../LibXOR/LibXOR.js"></script>
+    <script src="src/game.js"></script>
+
+</body>
+
+</html>
