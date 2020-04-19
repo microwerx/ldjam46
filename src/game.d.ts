@@ -265,6 +265,7 @@ declare class Game {
     levelInfo: LevelInfo;
     pauseGame: boolean;
     constructor(xor: LibXOR, ecs: XOR.ECS, width: number, height: number);
+    get playerPosition(): Vector3;
     /**
      * create a new physical entity with position, velocity, and render components
      * @param name name of the entity
@@ -284,14 +285,44 @@ declare class Game {
      * @returns {RenderComponent[]} array of render components
      */
     get renderComponents(): any[];
+    /**
+     * initialize the game from nothing
+     */
     init(): void;
+    /**
+     * Reset the game to start at a certain level
+     * @param level which level to begin at
+     */
     reset(level: number): void;
+    /**
+     * update background elements such as the waves
+     */
     updateBackground(): void;
+    /**
+     * Update the Atlantoid Plantoid that lives on the bottom of the sea
+     */
     updatePlantoid(): void;
+    /**
+     * Update the player that lives in the air bubble under the sea
+     */
     updatePlayer(): void;
+    /**
+     * Update the spear that the player holds
+     */
     updateSpears(): void;
+    /**
+     * Update the fishes that live under the sea
+     */
     updateFishes(): void;
+    /**
+     * Update the game
+     * @param dt elapsed time since last frame
+     */
     update(dt: number): void;
+    /**
+     * Draw the game
+     * @param rc render config to draw with
+     */
     draw(rc: Fluxions.FxRenderConfig): void;
 }
 declare class App {
@@ -299,7 +330,7 @@ declare class App {
     xor: LibXOR;
     readonly width = 640;
     readonly height = 512;
-    hudCanvas: HTMLCanvasElement;
+    hudCanvas: OffscreenCanvas;
     hud2D: CanvasRenderingContext2D;
     theta: number;
     mouse: Vector3;
@@ -319,6 +350,7 @@ declare class App {
     BACKbutton: number;
     SPACEbutton: number;
     TABbutton: number;
+    cameraZoom: number;
     ecs: XOR.ECS;
     game: Game;
     constructor();
@@ -368,6 +400,7 @@ declare class App {
      * render the 3D graphics for the game
      */
     render(): void;
+    drawText(text: string, y: number, color: string, shadowOffset: number): void;
     /**
      * Render the 2D overlay for the game
      */

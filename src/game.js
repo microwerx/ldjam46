@@ -577,7 +577,7 @@ class LevelInfo {
     constructor(numHeads, storminess) {
         this.numHeads = numHeads;
         this.storminess = storminess;
-        this.plantoidPosition = Vector3.make(0, -4, gmZDistance);
+        this.plantoidPosition = Vector3.make(0, -8, gmZDistance);
     }
 }
 const levels = [new LevelInfo(1, 0.1), new LevelInfo(2, 1.0), new LevelInfo(3, 0.5)];
@@ -643,6 +643,12 @@ class Game {
             }
         }
     }
+    get playerPosition() {
+        let e = this.entities.get(Player1);
+        if (e)
+            return e.position.position;
+        return Vector3.make(0, 0, 0);
+    }
     /**
      * create a new physical entity with position, velocity, and render components
      * @param name name of the entity
@@ -699,13 +705,23 @@ class Game {
         }
         return components;
     }
+    /**
+     * initialize the game from nothing
+     */
     init() { }
+    /**
+     * Reset the game to start at a certain level
+     * @param level which level to begin at
+     */
     reset(level) {
         if (level > levels.length)
             level = 1;
         this.level = level;
         this.levelInfo = levels[this.level - 1];
     }
+    /**
+     * update background elements such as the waves
+     */
     updateBackground() {
         let theta = this.xor.t1 * 10 * this.levelInfo.storminess;
         for (let i = BackdropStart; i < BackdropEnd; i++) {
@@ -729,6 +745,9 @@ class Game {
             b2.moveTo(p);
         }
     }
+    /**
+     * Update the Atlantoid Plantoid that lives on the bottom of the sea
+     */
     updatePlantoid() {
         let theta = this.xor.t1;
         let dir = theta & 1;
@@ -762,6 +781,9 @@ class Game {
             }
         }
     }
+    /**
+     * Update the player that lives in the air bubble under the sea
+     */
     updatePlayer() {
         let p1 = this.entities.get(Player1);
         if (!p1)
@@ -772,6 +794,9 @@ class Game {
         }
         p1.position.scale.y = p1.dead ? -1 : 1;
     }
+    /**
+     * Update the spear that the player holds
+     */
     updateSpears() {
         let p1 = this.entities.get(Player1);
         if (!p1)
@@ -784,7 +809,14 @@ class Game {
         s1.position.scale.copy(Vector3.make(p1.direction, 1, 1));
         s1.moveTo(p, p1.position.angleInDegrees);
     }
+    /**
+     * Update the fishes that live under the sea
+     */
     updateFishes() { }
+    /**
+     * Update the game
+     * @param dt elapsed time since last frame
+     */
     update(dt) {
         this.updateBackground();
         this.updatePlantoid();
@@ -794,6 +826,10 @@ class Game {
             e[1].update(dt);
         }
     }
+    /**
+     * Draw the game
+     * @param rc render config to draw with
+     */
     draw(rc) {
         for (let e of this.entities) {
             e[1].draw(this.xor, rc);
@@ -813,7 +849,7 @@ class App {
         this.xor = new LibXOR(this.parentID);
         this.width = 640;
         this.height = 512;
-        this.hudCanvas = document.createElement('canvas');
+        this.hudCanvas = new OffscreenCanvas(this.width, this.height);
         this.theta = 0;
         this.mouse = Vector3.make(0, 0, 0);
         this.click = Vector3.make(0, 0, 0);
@@ -832,14 +868,15 @@ class App {
         this.BACKbutton = 0;
         this.SPACEbutton = 0;
         this.TABbutton = 0;
+        this.cameraZoom = 0;
         this.ecs = new XOR.ECS();
         // components = new ComponentIDs();
         // assemblages = new AssemblageIDs();
         // player1ID = 0;
         // player2ID = 0;
         this.game = new Game(this.xor, this.ecs, this.width, this.height);
-        this.hudCanvas.style.position = 'absolute';
-        this.hudCanvas.style.zIndex = '5';
+        // this.hudCanvas.style.position = 'absolute';
+        // this.hudCanvas.style.zIndex = '5';
         let ctx = this.hudCanvas.getContext('2d');
         if (!ctx)
             throw 'Unable to create 2D Canvas';
@@ -858,6 +895,7 @@ class App {
         createButtonRow(controls, 'bZSDF', 'ZSDF/WASD', () => {
             self.euroKeys = 1 - self.euroKeys;
         });
+        createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
         createCheckRow(controls, 'zasdKeys', false);
         createRangeRow(controls, 'SOffsetX', 0, -8, 8);
         createRangeRow(controls, 'SOffsetY', 0, -8, 8);
@@ -933,10 +971,10 @@ class App {
         this.xor.graphics.setVideoMode(this.width, this.height);
         this.hudCanvas.width = this.width;
         this.hudCanvas.height = this.height;
-        let p = document.getElementById(this.parentID);
-        if (p) {
-            // p.appendChild(this.hudCanvas);
-        }
+        // let p = document.getElementById(this.parentID);
+        // if (p) {
+        //   p.appendChild(this.hudCanvas);
+        // }
         this.reset();
         this.loadGraphics();
         this.loadSounds();
@@ -953,6 +991,7 @@ class App {
         this.xor.meshes.load('rect', 'models/rect.obj', null, null);
         this.xor.meshes.load('rect01', 'models/rect01.obj', null, null);
         this.xor.meshes.load('spear', 'models/spear.obj', null, null);
+        this.xor.meshes.load('seabackdrop', 'models/seabackdrop.obj', null, null);
         this.xor.fluxions.textures.defaultWrapS =
             WebGLRenderingContext.CLAMP_TO_EDGE;
         this.xor.fluxions.textures.defaultWrapT =
@@ -967,7 +1006,7 @@ class App {
             this.xor.fluxions.textures.load('plantoid' + i.toString(), 'images/plantoid' + i.toString() + '.png');
         }
         for (let i = 1; i <= 4; i++) {
-            this.xor.fluxions.textures.load('fish' + i.toString(), 'images/fishes' + i.toString() + '.png');
+            this.xor.fluxions.textures.load('fish' + i.toString(), 'images/fishes_' + i.toString() + '.png');
         }
         this.xor.fluxions.textures.load('player1', 'images/player1.png');
         this.xor.fluxions.textures.load('player2', 'images/parrot.png');
@@ -1094,6 +1133,7 @@ class App {
         let xor = this.xor;
         xor.graphics.setOffset(getRangeValue('SOffsetX'), getRangeValue('SOffsetY'));
         xor.graphics.setZoom(getRangeValue('SZoomX'), getRangeValue('SZoomY'));
+        this.cameraZoom = getRangeValue('fZoom');
     }
     /**
      * render the 3D graphics for the game
@@ -1104,26 +1144,72 @@ class App {
         if (!this.game.pauseGame) {
             xor.graphics.render();
         }
+        let target = this.game.playerPosition;
         let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 100.0);
         let cmatrix = Matrix4.makeOrbit(-90, 0, 5.0);
+        cmatrix = Matrix4.makeLookAt(Vector3.make(0, 0, 10 + this.cameraZoom), target, Vector3.make(0, 1, 0));
         let rc = xor.renderconfigs.use('default');
         if (rc) {
+            let gl = this.xor.fluxions.gl;
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
             rc.uniformMatrix4f('ProjectionMatrix', pmatrix);
             rc.uniformMatrix4f('CameraMatrix', cmatrix);
-            rc.uniformMatrix4f('WorldMatrix', Matrix4.makeRotation(this.theta * 30, 0, 1, 0));
-            rc.uniform3f('Kd', Vector3.make(1.0, 0.0, 0.0));
+            rc.uniformMatrix4f('TextureMatrix', Matrix4.makeIdentity());
+            rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, -20));
+            rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
+            rc.uniform1f('MapKdMix', 1.0);
+            this.xor.meshes.render('seabackdrop', rc);
             this.game.draw(rc);
             rc.restore();
         }
+    }
+    drawText(text, y, color, shadowOffset) {
+        let tm = this.hud2D.measureText(text);
+        let cx = ((this.width - tm.width) >> 1);
+        this.hud2D.fillStyle = '#000000';
+        this.hud2D.fillText(text, cx + 4, y + 4);
+        this.hud2D.fillStyle = color;
+        this.hud2D.fillText(text, cx + shadowOffset, y + shadowOffset);
     }
     /**
      * Render the 2D overlay for the game
      */
     renderHUD() {
-        this.hudCanvas.style.position = '0 0';
-        this.hud2D.font = 'Minute 20px';
-        this.hud2D.fillStyle = '#ff0000';
-        this.hud2D.fillText('LibXOR', 10, 10);
+        // this.hudCanvas.style.position = '0 0';
+        let xor = this.xor;
+        let gl = this.xor.fluxions.gl;
+        let ox = 2 + 2 * (0.5 + 0.5 * Math.cos(this.xor.t1));
+        this.hud2D.clearRect(0, 0, this.width, this.height);
+        this.hud2D.font = '64px Pedrita';
+        this.drawText('Atlantoid', 64, '#ff0000', ox);
+        this.drawText('Plantoid', 128, '#00ff00', ox);
+        let image = this.hud2D.getImageData(0, 0, 640, 512);
+        let rc = xor.renderconfigs.use('default');
+        let texture = gl.createTexture();
+        if (texture) {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        }
+        if (rc) {
+            rc.uniformMatrix4f('ProjectionMatrix', Matrix4.makeIdentity());
+            rc.uniformMatrix4f('CameraMatrix', Matrix4.makeIdentity());
+            rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, 0));
+            rc.uniformMatrix4f('TextureMatrix', Matrix4.makeIdentity());
+            rc.uniform1f('MapKdMix', 1.0);
+            rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
+            rc.uniform1i('MapKd', 0);
+            // this.xor.fluxions.textures.get('player1')?.bindUnit(0);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            xor.meshes.render('rect', rc);
+            rc.restore();
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.deleteTexture(texture);
     }
     /**
      * delay the main thread by zero or more milliseconds

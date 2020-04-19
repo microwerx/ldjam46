@@ -99,7 +99,7 @@ const bgZDistance = -14;
 const gmZDistance = -4;
 
 class LevelInfo {
-  plantoidPosition = Vector3.make(0, -4, gmZDistance);
+  plantoidPosition = Vector3.make(0, -8, gmZDistance);
   constructor(public numHeads: number, public storminess: number) {}
 }
 
@@ -182,6 +182,13 @@ class Game {
   }
 
 
+  get playerPosition(): Vector3 {
+    let e = this.entities.get(Player1);
+    if (e) return e.position.position;
+    return Vector3.make(0, 0, 0);
+  }
+
+
   /**
    * create a new physical entity with position, velocity, and render components
    * @param name name of the entity
@@ -252,15 +259,26 @@ class Game {
   }
 
 
+  /**
+   * initialize the game from nothing
+   */
   init() {}
 
 
+  /**
+   * Reset the game to start at a certain level
+   * @param level which level to begin at
+   */
   reset(level: number) {
     if (level > levels.length) level = 1;
     this.level = level;
     this.levelInfo = levels[this.level - 1];
   }
 
+
+  /**
+   * update background elements such as the waves
+   */
   updateBackground() {
     let theta = this.xor.t1 * 10 * this.levelInfo.storminess;
     for (let i = BackdropStart; i < BackdropEnd; i++) {
@@ -289,6 +307,9 @@ class Game {
     }
   }
 
+  /**
+   * Update the Atlantoid Plantoid that lives on the bottom of the sea
+   */
   updatePlantoid() {
     let theta = this.xor.t1;
     let dir = theta & 1;
@@ -327,6 +348,9 @@ class Game {
   }
 
 
+  /**
+   * Update the player that lives in the air bubble under the sea
+   */
   updatePlayer() {
     let p1 = this.entities.get(Player1);
     if (!p1) return;
@@ -339,6 +363,9 @@ class Game {
   }
 
 
+  /**
+   * Update the spear that the player holds
+   */
   updateSpears() {
     let p1 = this.entities.get(Player1);
     if (!p1) return;
@@ -352,9 +379,16 @@ class Game {
   }
 
 
+  /**
+   * Update the fishes that live under the sea
+   */
   updateFishes() {}
 
 
+  /**
+   * Update the game
+   * @param dt elapsed time since last frame
+   */
   update(dt: number) {
     this.updateBackground();
     this.updatePlantoid();
@@ -366,6 +400,10 @@ class Game {
   }
 
 
+  /**
+   * Draw the game
+   * @param rc render config to draw with
+   */
   draw(rc: Fluxions.FxRenderConfig) {
     for (let e of this.entities) {
       e[1].draw(this.xor, rc);

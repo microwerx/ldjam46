@@ -12,7 +12,7 @@ class App {
   xor = new LibXOR(this.parentID);
   readonly width = 640;
   readonly height = 512;
-  hudCanvas = document.createElement('canvas');
+  hudCanvas = new OffscreenCanvas(this.width, this.height);
   hud2D: CanvasRenderingContext2D;
   theta = 0;
   mouse = Vector3.make(0, 0, 0);
@@ -33,6 +33,8 @@ class App {
   SPACEbutton = 0;
   TABbutton = 0;
 
+  cameraZoom = 0;
+
   ecs = new XOR.ECS();
   // components = new ComponentIDs();
   // assemblages = new AssemblageIDs();
@@ -42,8 +44,8 @@ class App {
   game = new Game(this.xor, this.ecs, this.width, this.height);
 
   constructor() {
-    this.hudCanvas.style.position = 'absolute';
-    this.hudCanvas.style.zIndex = '5';
+    // this.hudCanvas.style.position = 'absolute';
+    // this.hudCanvas.style.zIndex = '5';
     let ctx = this.hudCanvas.getContext('2d');
     if (!ctx) throw 'Unable to create 2D Canvas';
     this.hud2D = ctx;
@@ -64,6 +66,7 @@ class App {
     createButtonRow(controls, 'bZSDF', 'ZSDF/WASD', () => {
       self.euroKeys = 1 - self.euroKeys;
     });
+    createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
     createCheckRow(controls, 'zasdKeys', false);
     createRangeRow(controls, 'SOffsetX', 0, -8, 8);
     createRangeRow(controls, 'SOffsetY', 0, -8, 8);
@@ -148,10 +151,10 @@ class App {
 
     this.hudCanvas.width = this.width;
     this.hudCanvas.height = this.height;
-    let p = document.getElementById(this.parentID);
-    if (p) {
-      // p.appendChild(this.hudCanvas);
-    }
+    // let p = document.getElementById(this.parentID);
+    // if (p) {
+    //   p.appendChild(this.hudCanvas);
+    // }
 
     this.reset();
 
@@ -173,6 +176,7 @@ class App {
     this.xor.meshes.load('rect', 'models/rect.obj', null, null);
     this.xor.meshes.load('rect01', 'models/rect01.obj', null, null);
     this.xor.meshes.load('spear', 'models/spear.obj', null, null);
+    this.xor.meshes.load('seabackdrop', 'models/seabackdrop.obj', null, null);
 
     this.xor.fluxions.textures.defaultWrapS =
         WebGLRenderingContext.CLAMP_TO_EDGE;
@@ -191,7 +195,7 @@ class App {
     }
     for (let i = 1; i <= 4; i++) {
       this.xor.fluxions.textures.load(
-          'fish' + i.toString(), 'images/fishes' + i.toString() + '.png');
+          'fish' + i.toString(), 'images/fishes_' + i.toString() + '.png');
     }
     this.xor.fluxions.textures.load('player1', 'images/player1.png');
     this.xor.fluxions.textures.load('player2', 'images/parrot.png');
@@ -334,6 +338,7 @@ class App {
     xor.graphics.setOffset(
         getRangeValue('SOffsetX'), getRangeValue('SOffsetY'));
     xor.graphics.setZoom(getRangeValue('SZoomX'), getRangeValue('SZoomY'));
+    this.cameraZoom = getRangeValue('fZoom');
   }
 
 
@@ -348,16 +353,26 @@ class App {
       xor.graphics.render();
     }
 
+    let target = this.game.playerPosition;
     let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 100.0);
     let cmatrix = Matrix4.makeOrbit(-90, 0, 5.0);
+    cmatrix = Matrix4.makeLookAt(
+        Vector3.make(0, 0, 10 + this.cameraZoom), target,
+        Vector3.make(0, 1, 0));
     let rc = xor.renderconfigs.use('default');
 
     if (rc) {
+      let gl = this.xor.fluxions.gl;
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
       rc.uniformMatrix4f('ProjectionMatrix', pmatrix);
       rc.uniformMatrix4f('CameraMatrix', cmatrix);
-      rc.uniformMatrix4f(
-          'WorldMatrix', Matrix4.makeRotation(this.theta * 30, 0, 1, 0));
-      rc.uniform3f('Kd', Vector3.make(1.0, 0.0, 0.0));
+      rc.uniformMatrix4f('TextureMatrix', Matrix4.makeIdentity());
+      rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, -20));
+      rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
+      rc.uniform1f('MapKdMix', 1.0);
+      this.xor.meshes.render('seabackdrop', rc);
 
       this.game.draw(rc);
 
@@ -365,14 +380,60 @@ class App {
     }
   }
 
+  drawText(text: string, y: number, color: string, shadowOffset: number) {
+    let tm = this.hud2D.measureText(text);
+    let cx = ((this.width - tm.width) >> 1);
+    this.hud2D.fillStyle = '#000000';
+    this.hud2D.fillText(text, cx + 4, y + 4);
+    this.hud2D.fillStyle = color;
+    this.hud2D.fillText(text, cx + shadowOffset, y + shadowOffset);
+  }
+
   /**
    * Render the 2D overlay for the game
    */
   renderHUD() {
-    this.hudCanvas.style.position = '0 0';
-    this.hud2D.font = 'Minute 20px';
-    this.hud2D.fillStyle = '#ff0000';
-    this.hud2D.fillText('LibXOR', 10, 10);
+    // this.hudCanvas.style.position = '0 0';
+    let xor = this.xor;
+    let gl = this.xor.fluxions.gl;
+    let ox = 2 + 2 * (0.5 + 0.5 * Math.cos(this.xor.t1));
+
+    this.hud2D.clearRect(0, 0, this.width, this.height);
+    this.hud2D.font = '64px Pedrita';
+
+    this.drawText('Atlantoid', 64, '#ff0000', ox);
+    this.drawText('Plantoid', 128, '#00ff00', ox);
+
+    let image = this.hud2D.getImageData(0, 0, 640, 512);
+
+    let rc = xor.renderconfigs.use('default');
+
+    let texture = gl.createTexture();
+    if (texture) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(
+          gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    if (rc) {
+      rc.uniformMatrix4f('ProjectionMatrix', Matrix4.makeIdentity());
+      rc.uniformMatrix4f('CameraMatrix', Matrix4.makeIdentity());
+      rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, 0));
+      rc.uniformMatrix4f('TextureMatrix', Matrix4.makeIdentity());
+      rc.uniform1f('MapKdMix', 1.0);
+      rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
+      rc.uniform1i('MapKd', 0);
+      // this.xor.fluxions.textures.get('player1')?.bindUnit(0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      xor.meshes.render('rect', rc);
+      rc.restore();
+    }
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.deleteTexture(texture);
   }
 
   /**
