@@ -320,7 +320,7 @@ class Game {
     if (!p1) return;
     if (p1.physics.velocity.x != 0) {
       p1.direction = p1.physics.velocity.x < 0 ? -1 : 1;
-      p1.position.scale.x = p1.physics.velocity.x < 0 ? -1 : 1;
+      p1.position.scale.x = p1.direction;
     }
 
     p1.position.scale.y = p1.dead ? -1 : 1;
@@ -331,7 +331,10 @@ class Game {
     if (!p1) return;
     let s1 = this.entities.get(Player1Spear);
     if (!s1) return;
-    let p = p1.position.position.add(Vector3.make(-1, 0, 0));
+    let offset =
+        p1.direction > 0 ? Vector3.make(1.0, 0, 0) : Vector3.make(-0.5, 0, 0);
+    let p = p1.position.position.add(offset);
+    s1.position.scale.copy(Vector3.make(p1.direction, 1, 1));
     s1.moveTo(p, p1.position.angleInDegrees);
   }
 
