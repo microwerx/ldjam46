@@ -19,6 +19,7 @@ class GameEntity {
   active = 1
   dead = 0
   direction = 1
+  wrap = 1
 
   constructor(
       public ecs: XOR.ECS, public componentIDs: ComponentIDs,
@@ -57,6 +58,14 @@ class GameEntity {
       let texture = xor.fluxions.textures.get(this.render.texture);
       if (texture) {
         texture.bindUnit(0);
+        if (this.wrap) {
+          texture.setWrapST(
+              WebGLRenderingContext.REPEAT, WebGLRenderingContext.REPEAT);
+        } else {
+          texture.setWrapST(
+              WebGLRenderingContext.CLAMP_TO_EDGE,
+              WebGLRenderingContext.CLAMP_TO_EDGE);
+        }
         texture.setMinMagFilter(
             WebGLRenderingContext.NEAREST,
             WebGLRenderingContext.NEAREST_MIPMAP_NEAREST);
@@ -147,8 +156,9 @@ class Game {
     //     Player2Spear, 'player2spear', 'rect01', XOR.Color.WHITE, 'spear2');
 
     for (let i = BackdropStart; i < BackdropEnd; i++) {
-      this.createPhysical(
-          i, 'backdrop' + i.toString(), 'rect', XOR.Color.WHITE, 'water');
+      let e = this.createPhysical(
+          i, 'backdrop' + i.toString(), 'bigrect', XOR.Color.WHITE, 'water');
+      e.wrap = 0;
     }
 
     let b1 = this.entities.get(BackdropBlank1);
@@ -284,25 +294,31 @@ class Game {
     for (let i = BackdropStart; i < BackdropEnd; i++) {
       let e = this.entities.get(i);
       if (!e) continue;
-      let x = 1.5 * (i - BackdropStart - BackdropCount * 0.5);
+      let x = 5.5 * (i - BackdropStart - BackdropCount * 0.5);
       let n = 0.2 * noise2(x, 0);
       let p = Vector3.make(
           x + n + 0.25 * Math.sin(theta),
-          this.levelInfo.storminess * Math.sin(i + theta + n), bgZDistance);
+          this.levelInfo.storminess * Math.sin(i + theta + n),
+          -35);  // bgZDistance);
       e.moveTo(p);
     }
 
     let p1 = this.entities.get(Player1);
     let b1 = this.entities.get(BackdropBlank1);
     if (b1 && p1) {
-      let p = p1.position.position.add(
-          Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta), -1))
+      //   let p = p1.position.position.add(
+      //       Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta),
+      //       -1))
+      let p =
+          Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta), -75);
       b1.moveTo(p);
     }
     let b2 = this.entities.get(BackdropBlank2);
     if (b2 && p1) {
-      let p = p1.position.position.add(Vector3.make(
-          Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -1));
+      //   let p = p1.position.position.add(Vector3.make(
+      //       Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -1));
+      let p = Vector3.make(
+          Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -75);
       b2.moveTo(p);
     }
   }

@@ -512,6 +512,7 @@ class GameEntity {
         this.active = 1;
         this.dead = 0;
         this.direction = 1;
+        this.wrap = 1;
         ecs.setComponentData(entityID, componentIDs.positionID, position);
         ecs.setComponentData(entityID, componentIDs.physicsID, physics);
         ecs.setComponentData(entityID, componentIDs.renderID, render);
@@ -541,6 +542,12 @@ class GameEntity {
             let texture = xor.fluxions.textures.get(this.render.texture);
             if (texture) {
                 texture.bindUnit(0);
+                if (this.wrap) {
+                    texture.setWrapST(WebGLRenderingContext.REPEAT, WebGLRenderingContext.REPEAT);
+                }
+                else {
+                    texture.setWrapST(WebGLRenderingContext.CLAMP_TO_EDGE, WebGLRenderingContext.CLAMP_TO_EDGE);
+                }
                 texture.setMinMagFilter(WebGLRenderingContext.NEAREST, WebGLRenderingContext.NEAREST_MIPMAP_NEAREST);
                 mix = 1;
             }
@@ -613,7 +620,8 @@ class Game {
         // this.createPhysical(
         //     Player2Spear, 'player2spear', 'rect01', XOR.Color.WHITE, 'spear2');
         for (let i = BackdropStart; i < BackdropEnd; i++) {
-            this.createPhysical(i, 'backdrop' + i.toString(), 'rect', XOR.Color.WHITE, 'water');
+            let e = this.createPhysical(i, 'backdrop' + i.toString(), 'bigrect', XOR.Color.WHITE, 'water');
+            e.wrap = 0;
         }
         let b1 = this.entities.get(BackdropBlank1);
         let b2 = this.entities.get(BackdropBlank2);
@@ -728,20 +736,25 @@ class Game {
             let e = this.entities.get(i);
             if (!e)
                 continue;
-            let x = 1.5 * (i - BackdropStart - BackdropCount * 0.5);
+            let x = 5.5 * (i - BackdropStart - BackdropCount * 0.5);
             let n = 0.2 * noise2(x, 0);
-            let p = Vector3.make(x + n + 0.25 * Math.sin(theta), this.levelInfo.storminess * Math.sin(i + theta + n), bgZDistance);
+            let p = Vector3.make(x + n + 0.25 * Math.sin(theta), this.levelInfo.storminess * Math.sin(i + theta + n), -35); // bgZDistance);
             e.moveTo(p);
         }
         let p1 = this.entities.get(Player1);
         let b1 = this.entities.get(BackdropBlank1);
         if (b1 && p1) {
-            let p = p1.position.position.add(Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta), -1));
+            //   let p = p1.position.position.add(
+            //       Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta),
+            //       -1))
+            let p = Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta), -75);
             b1.moveTo(p);
         }
         let b2 = this.entities.get(BackdropBlank2);
         if (b2 && p1) {
-            let p = p1.position.position.add(Vector3.make(Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -1));
+            //   let p = p1.position.position.add(Vector3.make(
+            //       Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -1));
+            let p = Vector3.make(Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -75);
             b2.moveTo(p);
         }
     }
@@ -843,6 +856,24 @@ class Game {
 /// <reference path="ecs.ts" />
 /// <reference path="components.ts" />
 /// <reference path="game.ts" />
+class Camera {
+    constructor() {
+        this.eye = Vector3.make(0, 0, 10);
+        this.target = Vector3.make(0, 0, 0);
+        this.up = Vector3.make(0, 1, 0);
+    }
+    update(p) {
+        this.target.x = GTE.clamp(this.target.x, p.x - 1, p.x + 1);
+        this.target.y = GTE.clamp(this.target.y, p.y - 1, p.y + 1);
+        this.eye.x =
+            GTE.clamp(this.eye.x, this.target.x - 0.1, this.target.x + 0.1);
+        this.eye.y =
+            GTE.clamp(this.eye.y, this.target.y - 0.1, this.target.y + 0.1);
+    }
+    get matrix() {
+        return Matrix4.makeLookAt(this.eye, this.target, this.up);
+    }
+}
 class App {
     constructor() {
         this.parentID = 'game';
@@ -869,6 +900,7 @@ class App {
         this.SPACEbutton = 0;
         this.TABbutton = 0;
         this.cameraZoom = 0;
+        this.camera = new Camera();
         this.ecs = new XOR.ECS();
         // components = new ComponentIDs();
         // assemblages = new AssemblageIDs();
@@ -988,14 +1020,19 @@ class App {
         // this.xor.meshes.load('dragon', 'models/dragon.obj', bbox, null);
         // this.xor.meshes.load('bunny', 'models/bunny.obj', bbox, null);
         this.xor.meshes.load('box', 'models/box.obj', null, null);
+        this.xor.meshes.load('bigrect', 'models/bigrect.obj', null, null);
         this.xor.meshes.load('rect', 'models/rect.obj', null, null);
         this.xor.meshes.load('rect01', 'models/rect01.obj', null, null);
         this.xor.meshes.load('spear', 'models/spear.obj', null, null);
         this.xor.meshes.load('seabackdrop', 'models/seabackdrop.obj', null, null);
+        this.xor.meshes.load('seafloor', 'models/seafloor.obj', null, null);
+        this.xor.meshes.load('seawall', 'models/seawall.obj', null, null);
         this.xor.fluxions.textures.defaultWrapS =
             WebGLRenderingContext.CLAMP_TO_EDGE;
         this.xor.fluxions.textures.defaultWrapT =
             WebGLRenderingContext.CLAMP_TO_EDGE;
+        this.xor.fluxions.textures.load('seawall', 'images/seawall.png');
+        this.xor.fluxions.textures.load('seafloor', 'images/seafloor.png');
         this.xor.fluxions.textures.load('spear1', 'images/spear1.png');
         this.xor.fluxions.textures.load('spear2', 'images/spear2.png');
         this.xor.fluxions.textures.load('water', 'images/water.png');
@@ -1139,15 +1176,15 @@ class App {
      * render the 3D graphics for the game
      */
     render() {
+        var _a, _b;
         let xor = this.xor;
         xor.graphics.clear(XOR.Color.AZURE, XOR.Color.WHITE, 5);
         if (!this.game.pauseGame) {
             xor.graphics.render();
         }
-        let target = this.game.playerPosition;
-        let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 100.0);
-        let cmatrix = Matrix4.makeOrbit(-90, 0, 5.0);
-        cmatrix = Matrix4.makeLookAt(Vector3.make(0, 0, 10 + this.cameraZoom), target, Vector3.make(0, 1, 0));
+        let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 120.0);
+        this.camera.update(this.game.playerPosition);
+        let cmatrix = this.camera.matrix;
         let rc = xor.renderconfigs.use('default');
         if (rc) {
             let gl = this.xor.fluxions.gl;
@@ -1159,7 +1196,11 @@ class App {
             rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, -20));
             rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
             rc.uniform1f('MapKdMix', 1.0);
-            this.xor.meshes.render('seabackdrop', rc);
+            (_a = this.xor.fluxions.textures.get('seawall')) === null || _a === void 0 ? void 0 : _a.bindUnit(0);
+            rc.uniformMatrix4f('WorldMatrix', Matrix4.makeScale(0.5, 0.5, 0.5));
+            this.xor.meshes.render('seawall', rc);
+            (_b = this.xor.fluxions.textures.get('seafloor')) === null || _b === void 0 ? void 0 : _b.bindUnit(0);
+            this.xor.meshes.render('seafloor', rc);
             this.game.draw(rc);
             rc.restore();
         }
@@ -1230,7 +1271,7 @@ class App {
             self.xor.sound.update();
             self.update(self.xor.dt);
             self.render();
-            self.renderHUD();
+            // self.renderHUD();
             yield self.delay(1);
             self.mainloop();
         }));

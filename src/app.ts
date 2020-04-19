@@ -6,6 +6,24 @@
 /// <reference path="components.ts" />
 /// <reference path="game.ts" />
 
+class Camera {
+  eye = Vector3.make(0, 0, 10);
+  target = Vector3.make(0, 0, 0);
+  up = Vector3.make(0, 1, 0);
+
+  update(p: Vector3) {
+    this.target.x = GTE.clamp(this.target.x, p.x - 1, p.x + 1);
+    this.target.y = GTE.clamp(this.target.y, p.y - 1, p.y + 1);
+    this.eye.x =
+        GTE.clamp(this.eye.x, this.target.x - 0.1, this.target.x + 0.1);
+    this.eye.y =
+        GTE.clamp(this.eye.y, this.target.y - 0.1, this.target.y + 0.1);
+  }
+
+  get matrix(): Matrix4 {
+    return Matrix4.makeLookAt(this.eye, this.target, this.up);
+  }
+}
 
 class App {
   parentID = 'game'
@@ -13,7 +31,7 @@ class App {
   readonly width = 640;
   readonly height = 512;
   hudCanvas = new OffscreenCanvas(this.width, this.height);
-  hud2D: CanvasRenderingContext2D;
+  hud2D: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
   theta = 0;
   mouse = Vector3.make(0, 0, 0);
   click = Vector3.make(0, 0, 0);
@@ -34,6 +52,7 @@ class App {
   TABbutton = 0;
 
   cameraZoom = 0;
+  camera = new Camera();
 
   ecs = new XOR.ECS();
   // components = new ComponentIDs();
@@ -173,15 +192,21 @@ class App {
     // this.xor.meshes.load('dragon', 'models/dragon.obj', bbox, null);
     // this.xor.meshes.load('bunny', 'models/bunny.obj', bbox, null);
     this.xor.meshes.load('box', 'models/box.obj', null, null);
+    this.xor.meshes.load('bigrect', 'models/bigrect.obj', null, null);
     this.xor.meshes.load('rect', 'models/rect.obj', null, null);
     this.xor.meshes.load('rect01', 'models/rect01.obj', null, null);
     this.xor.meshes.load('spear', 'models/spear.obj', null, null);
     this.xor.meshes.load('seabackdrop', 'models/seabackdrop.obj', null, null);
 
+    this.xor.meshes.load('seafloor', 'models/seafloor.obj', null, null);
+    this.xor.meshes.load('seawall', 'models/seawall.obj', null, null);
+
     this.xor.fluxions.textures.defaultWrapS =
         WebGLRenderingContext.CLAMP_TO_EDGE;
     this.xor.fluxions.textures.defaultWrapT =
         WebGLRenderingContext.CLAMP_TO_EDGE;
+    this.xor.fluxions.textures.load('seawall', 'images/seawall.png');
+    this.xor.fluxions.textures.load('seafloor', 'images/seafloor.png');
     this.xor.fluxions.textures.load('spear1', 'images/spear1.png');
     this.xor.fluxions.textures.load('spear2', 'images/spear2.png');
     this.xor.fluxions.textures.load('water', 'images/water.png');
@@ -353,12 +378,9 @@ class App {
       xor.graphics.render();
     }
 
-    let target = this.game.playerPosition;
-    let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 100.0);
-    let cmatrix = Matrix4.makeOrbit(-90, 0, 5.0);
-    cmatrix = Matrix4.makeLookAt(
-        Vector3.make(0, 0, 10 + this.cameraZoom), target,
-        Vector3.make(0, 1, 0));
+    let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 120.0);
+    this.camera.update(this.game.playerPosition);
+    let cmatrix = this.camera.matrix;
     let rc = xor.renderconfigs.use('default');
 
     if (rc) {
@@ -372,7 +394,11 @@ class App {
       rc.uniformMatrix4f('WorldMatrix', Matrix4.makeTranslation(0, 0, -20));
       rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
       rc.uniform1f('MapKdMix', 1.0);
-      this.xor.meshes.render('seabackdrop', rc);
+      this.xor.fluxions.textures.get('seawall')?.bindUnit(0);
+      rc.uniformMatrix4f('WorldMatrix', Matrix4.makeScale(0.5, 0.5, 0.5));
+      this.xor.meshes.render('seawall', rc);
+      this.xor.fluxions.textures.get('seafloor')?.bindUnit(0);
+      this.xor.meshes.render('seafloor', rc);
 
       this.game.draw(rc);
 
@@ -456,7 +482,7 @@ class App {
       self.xor.sound.update();
       self.update(self.xor.dt);
       self.render();
-      self.renderHUD();
+      // self.renderHUD();
       await self.delay(1);
       self.mainloop();
     });

@@ -215,6 +215,7 @@ declare class GameEntity {
     active: number;
     dead: number;
     direction: number;
+    wrap: number;
     constructor(ecs: XOR.ECS, componentIDs: ComponentIDs, entityID: number, position: PositionComponent, physics: PhysicsComponent, render: RenderComponent);
     recalcMatrix(): void;
     moveTo(p: Vector3, angleInDegrees?: number): void;
@@ -325,13 +326,20 @@ declare class Game {
      */
     draw(rc: Fluxions.FxRenderConfig): void;
 }
+declare class Camera {
+    eye: Vector3;
+    target: Vector3;
+    up: Vector3;
+    update(p: Vector3): void;
+    get matrix(): Matrix4;
+}
 declare class App {
     parentID: string;
     xor: LibXOR;
     readonly width = 640;
     readonly height = 512;
     hudCanvas: OffscreenCanvas;
-    hud2D: CanvasRenderingContext2D;
+    hud2D: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
     theta: number;
     mouse: Vector3;
     click: Vector3;
@@ -351,6 +359,7 @@ declare class App {
     SPACEbutton: number;
     TABbutton: number;
     cameraZoom: number;
+    camera: Camera;
     ecs: XOR.ECS;
     game: Game;
     constructor();
