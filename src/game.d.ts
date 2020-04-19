@@ -332,6 +332,10 @@ declare class Game {
      */
     updateFishes(): void;
     /**
+     * perform collision events for game
+     */
+    collide(): void;
+    /**
      * Update the game
      * @param dt elapsed time since last frame
      */

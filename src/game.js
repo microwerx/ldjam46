@@ -546,6 +546,10 @@ class GameEntity {
         this.render.worldMatrix.translate3(this.position.position);
         this.render.worldMatrix.rotate(this.position.angleInDegrees, 0.0, 0.0, 1.0);
         this.render.textureMatrix.loadIdentity();
+        if (this.dead)
+            this.position.scale.y = -1;
+        else
+            this.position.scale.y = 1;
         this.render.textureMatrix.scale3(this.position.scale);
     }
     moveTo(p, angleInDegrees = 0) {
@@ -902,19 +906,46 @@ class Game {
             let e = this.entities.get(index);
             if (!e)
                 continue;
-            const fix = 2 * (PlayerRight - PlayerLeft);
-            if (e.position.position.x < -PlayerLeft * 2)
-                e.position.position.x += fix;
-            if (e.position.position.x > PlayerRight * 2)
-                e.position.position.x -= fix;
-            e.position.position.y =
-                GTE.clamp(e.position.position.y + cos, FishBottom, FishTop);
-            if (e.physics.velocity.x < 0)
-                e.direction = -1;
-            if (e.physics.velocity.x > 0)
-                e.direction = 1;
-            e.position.scale.x = e.direction;
-            e.moveTo(e.position.position);
+            if (e.dead) {
+                e.y -= this.xor.dt;
+                e.y = GTE.clamp(e.y, PlayerBottom, e.y);
+                if (e.y == PlayerBottom)
+                    e.vx = 0;
+            }
+            else {
+                const fix = 2 * (PlayerRight - PlayerLeft);
+                if (e.position.position.x < -PlayerLeft * 2)
+                    e.position.position.x += fix;
+                if (e.position.position.x > PlayerRight * 2)
+                    e.position.position.x -= fix;
+                e.position.position.y =
+                    GTE.clamp(e.position.position.y + cos, FishBottom, FishTop);
+                if (e.physics.velocity.x < 0)
+                    e.direction = -1;
+                if (e.physics.velocity.x > 0)
+                    e.direction = 1;
+                e.position.scale.x = e.direction;
+                e.moveTo(e.position.position);
+            }
+        }
+    }
+    /**
+     * perform collision events for game
+     */
+    collide() {
+        let spearE = this.entities.get(Player1Spear);
+        if (!spearE)
+            return;
+        let spear = GTE.vec3(spearE.x, spearE.y, 0);
+        for (let i = 0; i < FishCount; i++) {
+            let fe = this.entities.get(Fish1 + i);
+            if (!fe || fe.dead)
+                continue;
+            let fep = GTE.vec3(fe.x, fe.y, 0);
+            if (fep.distance(spear) < 1) {
+                fe.dead = 1;
+                fe.vx = 0.5 * fe.vx;
+            }
         }
     }
     /**
@@ -930,6 +961,7 @@ class Game {
             e[1].update(dt);
         }
         this.updateSpears();
+        this.collide();
     }
     /**
      * Draw the game
