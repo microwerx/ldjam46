@@ -189,6 +189,10 @@ class App {
       this.xor.fluxions.textures.load(
           'plantoid' + i.toString(), 'images/plantoid' + i.toString() + '.png');
     }
+    for (let i = 1; i <= 4; i++) {
+      this.xor.fluxions.textures.load(
+          'fish' + i.toString(), 'images/fishes' + i.toString() + '.png');
+    }
     this.xor.fluxions.textures.load('player1', 'images/player1.png');
     this.xor.fluxions.textures.load('player2', 'images/parrot.png');
   }

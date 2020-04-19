@@ -204,6 +204,7 @@ declare class AssemblageIDs {
     physicalID: number;
 }
 declare function noise2(x: number, y: number): number;
+declare function mix(x: number, y: number, a: number): number;
 declare class GameEntity {
     ecs: XOR.ECS;
     componentIDs: ComponentIDs;
@@ -289,6 +290,7 @@ declare class Game {
     updatePlantoid(): void;
     updatePlayer(): void;
     updateSpears(): void;
+    updateFishes(): void;
     update(dt: number): void;
     draw(rc: Fluxions.FxRenderConfig): void;
 }

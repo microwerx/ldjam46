@@ -498,6 +498,9 @@ function noise2(x, y) {
     return f - Math.floor(f);
 }
 ;
+function mix(x, y, a) {
+    return (1 - a) * x + a * y;
+}
 class GameEntity {
     constructor(ecs, componentIDs, entityID, position, physics, render) {
         this.ecs = ecs;
@@ -603,7 +606,7 @@ class Game {
         this.ecs.addComponentToAssemblage(this.assemblages.physicalID, this.components.physicsID);
         this.ecs.addComponentToAssemblage(this.assemblages.physicalID, this.components.renderID);
         // Create Player Entity
-        let e = this.createPhysical(Player1, 'player1', 'rect01', XOR.Color.WHITE, 'player1');
+        this.createPhysical(Player1, 'player1', 'rect01', XOR.Color.WHITE, 'player1');
         // this.createPhysical(
         //     Player2, 'player2', 'rect01', XOR.Color.WHITE, 'player2');
         this.createPhysical(Player1Spear, 'player1spear', 'spear', XOR.Color.WHITE, 'spear1');
@@ -728,25 +731,34 @@ class Game {
     }
     updatePlantoid() {
         let theta = this.xor.t1;
+        let dir = theta & 1;
         let cos = Math.cos(theta);
-        let sin = Math.sin(theta);
-        let angles = [25, 70, 190, 230];
+        let sin = Math.sin(theta * 2.234);
+        let angles = [230, 190, 70, 25];
         let angles1 = [-10, -10, -10, -10];
         let angles2 = [10, 10, 10, 10];
-        let travel = cos;
+        let travel = 0.8 + 0.1 * cos;
         const DegToRad = Math.PI / 180.0;
         for (let i = 0; i < APHeadCount; i++) {
-            let x = this.levelInfo.plantoidPosition.x;
+            let x = this.levelInfo.plantoidPosition.x + 2 * (i - 0.5 * APHeadCount);
             let y = this.levelInfo.plantoidPosition.y;
             for (let j = 0; j < APArmSegments; j++) {
-                let v = Vector3.makeUnit(Math.cos(angles[i] * DegToRad), Math.sin(angles[i] * DegToRad), 0.0);
+                let sway = angles[i] + mix(angles1[i], angles2[i], sin);
+                let v = Vector3.makeUnit(Math.cos(sway * DegToRad), 1.0, 0.0);
                 let index = APArm1 + i * APArmCount + j;
-                let e = this.entities.get(APArm1 + index);
+                let e = this.entities.get(index);
                 if (!e)
                     continue;
                 e.moveTo(Vector3.make(x, y, gmZDistance));
                 x += travel * v.x;
                 y += travel * v.y;
+            }
+            {
+                let e = this.entities.get(APHead1 + i);
+                if (!e)
+                    continue;
+                e.position.scale.x = dir ? -1 : 1;
+                e.moveTo(Vector3.make(x, y, gmZDistance));
             }
         }
     }
@@ -772,6 +784,7 @@ class Game {
         s1.position.scale.copy(Vector3.make(p1.direction, 1, 1));
         s1.moveTo(p, p1.position.angleInDegrees);
     }
+    updateFishes() { }
     update(dt) {
         this.updateBackground();
         this.updatePlantoid();
@@ -952,6 +965,9 @@ class App {
         for (let i = 1; i <= 3; i++) {
             this.xor.fluxions.textures.load('stem' + i.toString(), 'images/stem' + i.toString() + '.png');
             this.xor.fluxions.textures.load('plantoid' + i.toString(), 'images/plantoid' + i.toString() + '.png');
+        }
+        for (let i = 1; i <= 4; i++) {
+            this.xor.fluxions.textures.load('fish' + i.toString(), 'images/fishes' + i.toString() + '.png');
         }
         this.xor.fluxions.textures.load('player1', 'images/player1.png');
         this.xor.fluxions.textures.load('player2', 'images/parrot.png');
