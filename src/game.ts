@@ -108,7 +108,8 @@ const bgZDistance = -14;
 const gmZDistance = -4;
 
 class LevelInfo {
-  plantoidPosition = Vector3.make(0, -8, gmZDistance);
+  playerPosition = GTE.vec3(0, -15, 0);
+  plantoidPosition = Vector3.make(0, -20, gmZDistance);
   constructor(public numHeads: number, public storminess: number) {}
 }
 
@@ -283,6 +284,8 @@ class Game {
     if (level > levels.length) level = 1;
     this.level = level;
     this.levelInfo = levels[this.level - 1];
+    let e = this.entities.get(Player1);
+    e?.moveTo(this.levelInfo.playerPosition);
   }
 
 

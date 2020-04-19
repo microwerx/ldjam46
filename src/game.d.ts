@@ -249,6 +249,7 @@ declare const gmZDistance = -4;
 declare class LevelInfo {
     numHeads: number;
     storminess: number;
+    playerPosition: Vector3;
     plantoidPosition: Vector3;
     constructor(numHeads: number, storminess: number);
 }

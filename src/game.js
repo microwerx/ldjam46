@@ -584,7 +584,8 @@ class LevelInfo {
     constructor(numHeads, storminess) {
         this.numHeads = numHeads;
         this.storminess = storminess;
-        this.plantoidPosition = Vector3.make(0, -8, gmZDistance);
+        this.playerPosition = GTE.vec3(0, -15, 0);
+        this.plantoidPosition = Vector3.make(0, -20, gmZDistance);
     }
 }
 const levels = [new LevelInfo(1, 0.1), new LevelInfo(2, 1.0), new LevelInfo(3, 0.5)];
@@ -726,6 +727,8 @@ class Game {
             level = 1;
         this.level = level;
         this.levelInfo = levels[this.level - 1];
+        let e = this.entities.get(Player1);
+        e === null || e === void 0 ? void 0 : e.moveTo(this.levelInfo.playerPosition);
     }
     /**
      * update background elements such as the waves
