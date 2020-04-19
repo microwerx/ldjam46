@@ -10,8 +10,19 @@ function noise2(x: number, y: number) {
   return f - Math.floor(f);
 };
 
+
 function mix(x: number, y: number, a: number) {
   return (1 - a) * x + a * y;
+}
+
+
+function randBetween(a: number, b: number) {
+  return (Math.random() * (b - a) + a) | 0;
+}
+
+
+function randRange(count: number) {
+  return (Math.random() * count) | 0;
 }
 
 
@@ -20,6 +31,7 @@ class GameEntity {
   dead = 0
   direction = 1
   wrap = 1
+  landed = 0
 
   constructor(
       public ecs: XOR.ECS, public componentIDs: ComponentIDs,
@@ -141,6 +153,28 @@ const BackdropCount = 50;
 const BackdropEnd = BackdropStart + BackdropCount;
 const BackdropBlank1 = BackdropEnd + 1;
 const BackdropBlank2 = BackdropEnd + 2;
+
+const SFX_BEEP = 0;
+const SFX_DOOP = 1;
+const SFX_POOF = 2;
+const SFX_ERCK = 3;
+const SFX_DEAD = 4;
+
+const SFX_EATEN1 = 5;
+const SFX_EATEN2 = 6;
+const SFX_EATEN3 = 7;
+const SFX_EATEN4 = 8;
+const SFX_EatenCount = 4;
+
+const SFX_FishDead1 = 9;
+const SFX_FishDead2 = 10;
+const SFX_FishDead3 = 11;
+const SFX_FishDead4 = 12;
+const SFX_FishDeadCount = 4;
+
+const MUS_WAVE = 0;
+const MUS_GAME = 1;
+const MUS_DEAD = 2;
 
 const bgZDistance = -14;
 const gmZDistance = 0;
@@ -338,6 +372,24 @@ class Game {
 
 
   /**
+   * plays a sound effect
+   * @param id which sample id to play
+   */
+  playSound(id: number) {
+    this.xor.sound.sampler.playSample(id, false);
+  }
+
+
+  /**
+   * plays a music file
+   * @param id which music track to play
+   */
+  playMusic(id: number) {
+    this.xor.sound.jukebox.play(id);
+  }
+
+
+  /**
    * Reset the game to start at a certain level
    * @param level which level to begin at
    */
@@ -349,6 +401,8 @@ class Game {
     if (!e) return;
     e.moveTo(this.levelInfo.playerPosition);
     e.dead = 0;
+
+    this.playMusic(MUS_WAVE);
   }
 
 
@@ -481,6 +535,10 @@ class Game {
     if (p1.dead) {
       p1.vy = GTE.clamp(p1.vy, -1, 1);
       if (p1.y > PlayerBottom) p1.position.angleInDegrees += this.xor.dt * 10;
+      if (!p1.landed && p1.y == PlayerBottom) {
+        this.playSound(SFX_DOOP);
+        p1.landed = 1;
+      }
     }
   }
 
@@ -548,6 +606,7 @@ class Game {
         if (fep.distance(spear) < 1) {
           fe.dead = 1;
           fe.vx = 0.5 * fe.vx;
+          this.playSound(SFX_FishDead1 + randRange(SFX_FishDeadCount));
         }
       }
       if (fe.dead && fe.y > PlayerBottom) {
@@ -558,6 +617,7 @@ class Game {
             let apep = GTE.vec3(ape.x, ape.y, 0);
             if (fep.distance(apep) < APKillDistance) {
               fe.active = 0;
+              this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
             }
           }
         }
@@ -584,6 +644,8 @@ class Game {
           let apep = GTE.vec3(ape.x, ape.y, 0);
           if (pep.distance(apep) < APKillDistance) {
             pe.dead = 1;
+            this.playSound(SFX_DEAD);
+            this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
           }
         }
       }
@@ -602,6 +664,11 @@ class Game {
     this.updateFishes();
     for (let e of this.entities) {
       e[1].update(dt)
+      if (!e[1].landed && e[1].y == PlayerBottom) {
+        this.playSound(SFX_DOOP);
+        e[1].landed = 1;
+      }
+      else if (e[1].y > PlayerBottom) e[1].landed = 0;
     }
     this.updateSpears();
     this.collide();

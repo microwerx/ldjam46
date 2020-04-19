@@ -229,15 +229,30 @@ class App {
   }
 
   loadSounds() {
-    this.xor.sound.sampler.loadSample(0, 'sounds/BassDrum1.wav');
-    this.xor.sound.sampler.loadSample(1, 'sounds/BassDrum2.wav');
+    this.xor.sound.sampler.loadSample(SFX_DOOP, 'sounds/sfx_doop.wav');
+    this.xor.sound.sampler.loadSample(SFX_BEEP, 'sounds/sfx_beep.wav');
+    this.xor.sound.sampler.loadSample(SFX_ERCK, 'sounds/sfx_erck.wav');
+    this.xor.sound.sampler.loadSample(SFX_POOF, 'sounds/sfx_poof.wav');
+    this.xor.sound.sampler.loadSample(SFX_DEAD, 'sounds/sfx_dead.wav');
+    this.xor.sound.sampler.loadSample(SFX_EATEN1, 'sounds/sfx_plantoid1.wav');
+    this.xor.sound.sampler.loadSample(SFX_EATEN2, 'sounds/sfx_plantoid2.wav');
+    this.xor.sound.sampler.loadSample(SFX_EATEN3, 'sounds/sfx_plantoid3.wav');
+    this.xor.sound.sampler.loadSample(SFX_EATEN4, 'sounds/sfx_plantoid4.wav');
+    this.xor.sound.sampler.loadSample(
+        SFX_FishDead1, 'sounds/sfx_fishdead1.wav');
+    this.xor.sound.sampler.loadSample(
+        SFX_FishDead2, 'sounds/sfx_fishdead2.wav');
+    this.xor.sound.sampler.loadSample(
+        SFX_FishDead3, 'sounds/sfx_fishdead3.wav');
+    this.xor.sound.sampler.loadSample(
+        SFX_FishDead4, 'sounds/sfx_fishdead4.wav');
   }
 
   /**
    * loadMusic using the sound jukebox
    */
   loadMusic() {
-    this.xor.sound.jukebox.add(0, 'music/noise.mp3', true, false);
+    this.xor.sound.jukebox.add(MUS_WAVE, 'music/noise.mp3', true, false);
     this.xor.sound.jukebox.add(1, 'music/maintheme.mp3', true, false);
     this.xor.sound.jukebox.add(2, 'music/adventuretheme.mp3', true, false);
     this.xor.sound.jukebox.add(3, 'music/arcadetheme.mp3', true, false);

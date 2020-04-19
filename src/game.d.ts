@@ -205,6 +205,8 @@ declare class AssemblageIDs {
 }
 declare function noise2(x: number, y: number): number;
 declare function mix(x: number, y: number, a: number): number;
+declare function randBetween(a: number, b: number): number;
+declare function randRange(count: number): number;
 declare class GameEntity {
     ecs: XOR.ECS;
     componentIDs: ComponentIDs;
@@ -216,6 +218,7 @@ declare class GameEntity {
     dead: number;
     direction: number;
     wrap: number;
+    landed: number;
     constructor(ecs: XOR.ECS, componentIDs: ComponentIDs, entityID: number, position: PositionComponent, physics: PhysicsComponent, render: RenderComponent);
     get x(): number;
     get y(): number;
@@ -259,6 +262,24 @@ declare const BackdropCount = 50;
 declare const BackdropEnd: number;
 declare const BackdropBlank1: number;
 declare const BackdropBlank2: number;
+declare const SFX_BEEP = 0;
+declare const SFX_DOOP = 1;
+declare const SFX_POOF = 2;
+declare const SFX_ERCK = 3;
+declare const SFX_DEAD = 4;
+declare const SFX_EATEN1 = 5;
+declare const SFX_EATEN2 = 6;
+declare const SFX_EATEN3 = 7;
+declare const SFX_EATEN4 = 8;
+declare const SFX_EatenCount = 4;
+declare const SFX_FishDead1 = 9;
+declare const SFX_FishDead2 = 10;
+declare const SFX_FishDead3 = 11;
+declare const SFX_FishDead4 = 12;
+declare const SFX_FishDeadCount = 4;
+declare const MUS_WAVE = 0;
+declare const MUS_GAME = 1;
+declare const MUS_DEAD = 2;
 declare const bgZDistance = -14;
 declare const gmZDistance = 0;
 declare const APKillDistance = 1.5;
@@ -307,6 +328,16 @@ declare class Game {
      * initialize the game from nothing
      */
     init(): void;
+    /**
+     * plays a sound effect
+     * @param id which sample id to play
+     */
+    playSound(id: number): void;
+    /**
+     * plays a music file
+     * @param id which music track to play
+     */
+    playMusic(id: number): void;
     /**
      * Reset the game to start at a certain level
      * @param level which level to begin at
