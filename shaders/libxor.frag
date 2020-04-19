@@ -30,7 +30,9 @@ void main() {
     color *= map.rgb;
     alpha = map.a;
   }
-  if (alpha != 1.0)
+
+  if (alpha == 0.0)
     discard;
+
   oFragColor = vec4(color, alpha);
 }
