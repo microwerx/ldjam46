@@ -306,10 +306,12 @@ class App {
     xor.graphics.sprites[1].position.x += this.p2x * dt * 10;
     xor.graphics.sprites[1].position.y += this.p2y * dt * 10;
 
+    let pe = this.game.entities.get(Player1)
+    if (!pe) return;
     let p1 = this.game.entities.get(Player1)?.physics
     let p2 = this.game.entities.get(Player2)?.physics
 
-    if (p1) {
+    if (p1 && !pe.dead) {
       p1.velocity.reset(this.p1x, -this.p1y, 0);
     }
 
@@ -320,7 +322,7 @@ class App {
         spr.enabled = true;
         spr.position.x += gp.axe(0) * dt * 10;
         spr.position.y += gp.axe(1) * dt * 10;
-        if (p1) p1.velocity.reset(gp.axe(0), gp.axe(1), 0);
+        if (p1 && !pe.dead) p1.velocity.reset(gp.axe(0), gp.axe(1), 0);
       } else {
         spr.enabled = false;
       }

@@ -144,6 +144,7 @@ const BackdropBlank2 = BackdropEnd + 2;
 
 const bgZDistance = -14;
 const gmZDistance = 0;
+const APKillDistance = 1.5;
 
 class LevelInfo {
   playerPosition = GTE.vec3(0, FishBottom, gmZDistance + 0.1);
@@ -238,15 +239,17 @@ class Game {
       ];
       let e = this.createPhysical(
           index, 'fish' + i.toString(), 'rect01',
-          colors[(Math.random() * colors.length) | 0],
-          textures[(Math.random() * textures.length) | 0]);
-      e.moveTo(
-          GTE.vec3(
-              Math.random() * this.width,
-              Math.random() * FishRange + FishBottom, Math.random() * -6 + 3),
-          0);
-      e.physics.velocity.x =
-          (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
+          XOR.Color.CYAN,  // colors[(Math.random() * colors.length) | 0],
+          'fish1');        // textures[(Math.random() * textures.length) | 0]);
+      //   e.moveTo(
+      //       GTE.vec3(
+      //           Math.random() * this.width,
+      //           Math.random() * FishRange + FishBottom, Math.random() * -6 +
+      //           3),
+      //       0);
+      //   e.physics.velocity.x =
+      //       (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
+      this.spawnFish(e);
     }
   }
 
@@ -343,7 +346,29 @@ class Game {
     this.level = level;
     this.levelInfo = levels[this.level - 1];
     let e = this.entities.get(Player1);
-    e?.moveTo(this.levelInfo.playerPosition);
+    if (!e) return;
+    e.moveTo(this.levelInfo.playerPosition);
+    e.dead = 0;
+  }
+
+
+  spawnFish(fe: GameEntity) {
+    let textures = ['fish1', 'fish2', 'fish3', 'fish4'];
+    let colors = [
+      XOR.Color.RED, XOR.Color.GREEN, XOR.Color.GOLD, XOR.Color.YELLOW,
+      XOR.Color.ORANGE
+    ];
+    fe.render.color = XOR.Colors[colors[(Math.random() * colors.length) | 0]];
+    fe.render.texture = textures[(Math.random() * textures.length) | 0];
+    fe.moveTo(
+        GTE.vec3(
+            Math.random() * this.width, Math.random() * FishRange + FishBottom,
+            Math.random() * -6 + 3),
+        0);
+    fe.physics.velocity.x =
+        (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
+    fe.dead = 0;
+    fe.active = 1;
   }
 
 
@@ -453,6 +478,10 @@ class Game {
     if (p1.y <= PlayerBottom && p1.vy < 0) p1.vy = 0;
 
     p1.position.scale.y = p1.dead ? -1 : 1;
+    if (p1.dead) {
+      p1.vy = GTE.clamp(p1.vy, -1, 1);
+      if (p1.y > PlayerBottom) p1.position.angleInDegrees += this.xor.dt * 10;
+    }
   }
 
 
@@ -507,20 +536,56 @@ class Game {
   }
 
 
-  /**
-   * perform collision events for game
-   */
-  collide() {
+  collideFishes() {
     let spearE = this.entities.get(Player1Spear);
     if (!spearE) return;
     let spear = GTE.vec3(spearE.x, spearE.y, 0);
     for (let i = 0; i < FishCount; i++) {
       let fe = this.entities.get(Fish1 + i);
-      if (!fe || fe.dead) continue;
+      if (!fe) continue;
       let fep = GTE.vec3(fe.x, fe.y, 0);
-      if (fep.distance(spear) < 1) {
-        fe.dead = 1;
-        fe.vx = 0.5 * fe.vx;
+      if (!fe.dead) {
+        if (fep.distance(spear) < 1) {
+          fe.dead = 1;
+          fe.vx = 0.5 * fe.vx;
+        }
+      }
+      if (fe.dead && fe.y > PlayerBottom) {
+        for (let ap = 0; ap < APHeadCount; ap++) {
+          let ape = this.entities.get(APHead1 + ap);
+          if (!ape) continue;
+          if (!ape.dead) {
+            let apep = GTE.vec3(ape.x, ape.y, 0);
+            if (fep.distance(apep) < APKillDistance) {
+              fe.active = 0;
+            }
+          }
+        }
+      }
+      if (!fe.active) {
+        this.spawnFish(fe);
+      }
+    }
+  }
+
+  /**
+   * perform collision events for game
+   */
+  collide() {
+    this.collideFishes();
+    let pe = this.entities.get(Player1);
+    if (!pe) return;
+    if (!pe.dead) {
+      for (let ap = 0; ap < APHeadCount; ap++) {
+        let ape = this.entities.get(APHead1 + ap);
+        if (!ape) continue;
+        if (!ape.dead) {
+          let pep = GTE.vec3(pe.x, pe.y, 0);
+          let apep = GTE.vec3(ape.x, ape.y, 0);
+          if (pep.distance(apep) < APKillDistance) {
+            pe.dead = 1;
+          }
+        }
       }
     }
   }
@@ -549,7 +614,7 @@ class Game {
    */
   draw(rc: Fluxions.FxRenderConfig) {
     for (let e of this.entities) {
-      e[1].draw(this.xor, rc);
+      if (e[1].active) e[1].draw(this.xor, rc);
     }
   }
 }

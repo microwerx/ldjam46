@@ -261,6 +261,7 @@ declare const BackdropBlank1: number;
 declare const BackdropBlank2: number;
 declare const bgZDistance = -14;
 declare const gmZDistance = 0;
+declare const APKillDistance = 1.5;
 declare class LevelInfo {
     numHeads: number;
     storminess: number;
@@ -311,6 +312,7 @@ declare class Game {
      * @param level which level to begin at
      */
     reset(level: number): void;
+    spawnFish(fe: GameEntity): void;
     /**
      * update background elements such as the waves
      */
@@ -331,6 +333,7 @@ declare class Game {
      * Update the fishes that live under the sea
      */
     updateFishes(): void;
+    collideFishes(): void;
     /**
      * perform collision events for game
      */
