@@ -448,6 +448,7 @@ class PositionComponent {
         this.bbox = bbox;
         this.angleInDegrees = 0;
         this.scale = Vector3.make(1, 1, 1);
+        this.size = 1;
     }
 }
 class PhysicsComponent {
@@ -520,6 +521,8 @@ class GameEntity {
         this.direction = 1;
         this.wrap = 1;
         this.landed = 0;
+        this.eating = 0;
+        this.eatingTime = 0;
         ecs.setComponentData(entityID, componentIDs.positionID, position);
         ecs.setComponentData(entityID, componentIDs.physicsID, physics);
         ecs.setComponentData(entityID, componentIDs.renderID, render);
@@ -552,6 +555,7 @@ class GameEntity {
         this.render.worldMatrix.loadIdentity();
         this.render.worldMatrix.translate3(this.position.position);
         this.render.worldMatrix.rotate(this.position.angleInDegrees, 0.0, 0.0, 1.0);
+        this.render.worldMatrix.scale(this.position.size, this.position.size, 1.0);
         this.render.textureMatrix.loadIdentity();
         if (this.dead)
             this.position.scale.y = -1;
@@ -635,6 +639,8 @@ const SFX_FishDead2 = 10;
 const SFX_FishDead3 = 11;
 const SFX_FishDead4 = 12;
 const SFX_FishDeadCount = 4;
+const SFX_BUBBLE1 = 13;
+const SFX_BUBBLE2 = 14;
 const MUS_WAVE = 0;
 const MUS_GAME = 1;
 const MUS_DEAD = 2;
@@ -810,6 +816,7 @@ class Game {
      * @param id which music track to play
      */
     playMusic(id) {
+        this.xor.sound.jukebox.volume = 0.5;
         this.xor.sound.jukebox.play(id);
     }
     /**
@@ -826,7 +833,7 @@ class Game {
             return;
         e.moveTo(this.levelInfo.playerPosition);
         e.dead = 0;
-        this.playMusic(MUS_WAVE);
+        this.playMusic(MUS_GAME);
     }
     spawnFish(fe) {
         let textures = ['fish1', 'fish2', 'fish3', 'fish4'];
@@ -841,6 +848,9 @@ class Game {
             (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
         fe.dead = 0;
         fe.active = 1;
+        fe.eating = 0;
+        fe.position.scale.reset(1, 1, 1);
+        fe.position.angleInDegrees = 0;
     }
     /**
      * update background elements such as the waves
@@ -1020,7 +1030,7 @@ class Game {
                     this.playSound(SFX_FishDead1 + randRange(SFX_FishDeadCount));
                 }
             }
-            if (fe.dead && fe.y > PlayerBottom) {
+            if (!fe.eating && fe.dead && fe.y > PlayerBottom) {
                 for (let ap = 0; ap < APHeadCount; ap++) {
                     let ape = this.entities.get(APHead1 + ap);
                     if (!ape)
@@ -1028,11 +1038,18 @@ class Game {
                     if (!ape.dead) {
                         let apep = GTE.vec3(ape.x, ape.y, 0);
                         if (fep.distance(apep) < APKillDistance) {
-                            fe.active = 0;
+                            fe.eating = 1;
+                            fe.eatingTime = this.xor.t1 + 1;
                             this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
                         }
                     }
                 }
+            }
+            if (fe.eating) {
+                fe.position.angleInDegrees += 40 * this.xor.dt;
+                fe.position.size = GTE.clamp(fe.position.size - this.xor.dt, 0, 1);
+                if (fe.eatingTime < this.xor.t1)
+                    fe.active = 0;
             }
             if (!fe.active) {
                 this.spawnFish(fe);
@@ -1059,6 +1076,7 @@ class Game {
                         pe.dead = 1;
                         this.playSound(SFX_DEAD);
                         this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
+                        this.playMusic(MUS_WAVE);
                     }
                 }
             }
@@ -1316,10 +1334,11 @@ class App {
      * loadMusic using the sound jukebox
      */
     loadMusic() {
-        this.xor.sound.jukebox.add(MUS_WAVE, 'music/noise.mp3', true, false);
-        this.xor.sound.jukebox.add(1, 'music/maintheme.mp3', true, false);
-        this.xor.sound.jukebox.add(2, 'music/adventuretheme.mp3', true, false);
-        this.xor.sound.jukebox.add(3, 'music/arcadetheme.mp3', true, false);
+        this.xor.sound.jukebox.add(MUS_WAVE, 'music/atlantoid_noise.mp3', true, false);
+        this.xor.sound.jukebox.add(MUS_GAME, 'music/atlantoid_plantoid.mp3', true, false);
+        // this.xor.sound.jukebox.add(1, 'music/maintheme.mp3', true, false);
+        // this.xor.sound.jukebox.add(2, 'music/adventuretheme.mp3', true, false);
+        // this.xor.sound.jukebox.add(3, 'music/arcadetheme.mp3', true, false);
     }
     /**
      * reset game back to initial conditions

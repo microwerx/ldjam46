@@ -32,6 +32,8 @@ class GameEntity {
   direction = 1
   wrap = 1
   landed = 0
+  eating = 0
+  eatingTime = 0
 
   constructor(
       public ecs: XOR.ECS, public componentIDs: ComponentIDs,
@@ -72,6 +74,7 @@ class GameEntity {
     this.render.worldMatrix.loadIdentity();
     this.render.worldMatrix.translate3(this.position.position);
     this.render.worldMatrix.rotate(this.position.angleInDegrees, 0.0, 0.0, 1.0);
+    this.render.worldMatrix.scale(this.position.size, this.position.size, 1.0);
     this.render.textureMatrix.loadIdentity();
     if (this.dead)
       this.position.scale.y = -1;
@@ -171,6 +174,9 @@ const SFX_FishDead2 = 10;
 const SFX_FishDead3 = 11;
 const SFX_FishDead4 = 12;
 const SFX_FishDeadCount = 4;
+
+const SFX_BUBBLE1 = 13;
+const SFX_BUBBLE2 = 14;
 
 const MUS_WAVE = 0;
 const MUS_GAME = 1;
@@ -385,6 +391,7 @@ class Game {
    * @param id which music track to play
    */
   playMusic(id: number) {
+    this.xor.sound.jukebox.volume = 0.5;
     this.xor.sound.jukebox.play(id);
   }
 
@@ -402,7 +409,7 @@ class Game {
     e.moveTo(this.levelInfo.playerPosition);
     e.dead = 0;
 
-    this.playMusic(MUS_WAVE);
+    this.playMusic(MUS_GAME);
   }
 
 
@@ -423,6 +430,9 @@ class Game {
         (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
     fe.dead = 0;
     fe.active = 1;
+    fe.eating = 0;
+    fe.position.scale.reset(1, 1, 1);
+    fe.position.angleInDegrees = 0;
   }
 
 
@@ -609,18 +619,24 @@ class Game {
           this.playSound(SFX_FishDead1 + randRange(SFX_FishDeadCount));
         }
       }
-      if (fe.dead && fe.y > PlayerBottom) {
+      if (!fe.eating && fe.dead && fe.y > PlayerBottom) {
         for (let ap = 0; ap < APHeadCount; ap++) {
           let ape = this.entities.get(APHead1 + ap);
           if (!ape) continue;
           if (!ape.dead) {
             let apep = GTE.vec3(ape.x, ape.y, 0);
             if (fep.distance(apep) < APKillDistance) {
-              fe.active = 0;
+              fe.eating = 1;
+              fe.eatingTime = this.xor.t1 + 1;
               this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
             }
           }
         }
+      }
+      if (fe.eating) {
+        fe.position.angleInDegrees += 40 * this.xor.dt;
+        fe.position.size = GTE.clamp(fe.position.size - this.xor.dt, 0, 1);
+        if (fe.eatingTime < this.xor.t1) fe.active = 0;
       }
       if (!fe.active) {
         this.spawnFish(fe);
@@ -646,6 +662,7 @@ class Game {
             pe.dead = 1;
             this.playSound(SFX_DEAD);
             this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
+            this.playMusic(MUS_WAVE);
           }
         }
       }

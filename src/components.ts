@@ -4,6 +4,7 @@
 class PositionComponent {
   angleInDegrees = 0;
   scale = Vector3.make(1, 1, 1);
+  size = 1;
 
   /**
    * Creates data for positionable entity

@@ -164,6 +164,7 @@ declare class PositionComponent {
     bbox: GTE.BoundingBox;
     angleInDegrees: number;
     scale: Vector3;
+    size: number;
     /**
      * Creates data for positionable entity
      * @param {Vector3} p position of entity
@@ -219,6 +220,8 @@ declare class GameEntity {
     direction: number;
     wrap: number;
     landed: number;
+    eating: number;
+    eatingTime: number;
     constructor(ecs: XOR.ECS, componentIDs: ComponentIDs, entityID: number, position: PositionComponent, physics: PhysicsComponent, render: RenderComponent);
     get x(): number;
     get y(): number;
@@ -277,6 +280,8 @@ declare const SFX_FishDead2 = 10;
 declare const SFX_FishDead3 = 11;
 declare const SFX_FishDead4 = 12;
 declare const SFX_FishDeadCount = 4;
+declare const SFX_BUBBLE1 = 13;
+declare const SFX_BUBBLE2 = 14;
 declare const MUS_WAVE = 0;
 declare const MUS_GAME = 1;
 declare const MUS_DEAD = 2;

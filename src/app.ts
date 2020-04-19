@@ -252,10 +252,13 @@ class App {
    * loadMusic using the sound jukebox
    */
   loadMusic() {
-    this.xor.sound.jukebox.add(MUS_WAVE, 'music/noise.mp3', true, false);
-    this.xor.sound.jukebox.add(1, 'music/maintheme.mp3', true, false);
-    this.xor.sound.jukebox.add(2, 'music/adventuretheme.mp3', true, false);
-    this.xor.sound.jukebox.add(3, 'music/arcadetheme.mp3', true, false);
+    this.xor.sound.jukebox.add(
+        MUS_WAVE, 'music/atlantoid_noise.mp3', true, false);
+    this.xor.sound.jukebox.add(
+        MUS_GAME, 'music/atlantoid_plantoid.mp3', true, false);
+    // this.xor.sound.jukebox.add(1, 'music/maintheme.mp3', true, false);
+    // this.xor.sound.jukebox.add(2, 'music/adventuretheme.mp3', true, false);
+    // this.xor.sound.jukebox.add(3, 'music/arcadetheme.mp3', true, false);
   }
 
   /**
