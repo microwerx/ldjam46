@@ -30,6 +30,32 @@ class GameEntity {
     ecs.setComponentData(entityID, componentIDs.renderID, render);
   }
 
+  get x(): number {
+    return this.position.position.x;
+  }
+  get y(): number {
+    return this.position.position.y;
+  }
+  get vx(): number {
+    return this.physics.velocity.x;
+  }
+  get vy(): number {
+    return this.physics.velocity.y;
+  }
+
+  set x(x: number) {
+    this.position.position.x = x;
+  }
+  set y(y: number) {
+    this.position.position.y = y;
+  }
+  set vx(x: number) {
+    this.physics.velocity.x = x;
+  }
+  set vy(y: number) {
+    this.physics.velocity.y = y;
+  }
+
   recalcMatrix() {
     this.render.worldMatrix.loadIdentity();
     this.render.worldMatrix.translate3(this.position.position);
@@ -96,7 +122,15 @@ const APArmCount = 4
 const APArmSegments = 3
 
 const Fish1 = 100
-const FishCount = 100
+const FishCount = 64
+const FishBottom = -45;
+const FishTop = -15;
+const FishRange = FishTop - FishBottom;
+
+const PlayerBottom = FishBottom - 5;
+const PlayerTop = FishTop + 2;
+const PlayerLeft = -9;
+const PlayerRight = 8;
 
 const BackdropStart = 200
 const BackdropCount = 50;
@@ -105,16 +139,16 @@ const BackdropBlank1 = BackdropEnd + 1;
 const BackdropBlank2 = BackdropEnd + 2;
 
 const bgZDistance = -14;
-const gmZDistance = -4;
+const gmZDistance = 0;
 
 class LevelInfo {
-  playerPosition = GTE.vec3(0, -15, 0);
-  plantoidPosition = Vector3.make(0, -20, gmZDistance);
+  playerPosition = GTE.vec3(0, FishBottom, gmZDistance + 0.1);
+  plantoidPosition = Vector3.make(0, FishBottom - 5, gmZDistance);
   constructor(public numHeads: number, public storminess: number) {}
 }
 
 const levels =
-    [new LevelInfo(1, 0.1), new LevelInfo(2, 1.0), new LevelInfo(3, 0.5)];
+    [new LevelInfo(1, 0.3), new LevelInfo(2, 0.5), new LevelInfo(3, 0.4)];
 
 class Game {
   readonly bboxSizeOne = new GTE.BoundingBox(
@@ -175,7 +209,7 @@ class Game {
         let textures = ['stem1', 'stem2', 'stem3'];
         let texture = textures[(Math.random() * textures.length) | 0];
         let e = this.createPhysical(
-            index, armname, 'rect01', XOR.Color.WHITE, texture);
+            index, armname, 'rect', XOR.Color.WHITE, texture);
         let p = Vector3.make(i - APHeadCount * 0.5, j, gmZDistance);
         e.moveTo(p);
       }
@@ -185,10 +219,30 @@ class Game {
         let textures = ['plantoid1', 'plantoid2', 'plantoid3'];
         let texture = textures[(Math.random() * textures.length) | 0];
         let e = this.createPhysical(
-            APHead1 + i, headname, 'rect01', XOR.Color.WHITE, texture);
+            APHead1 + i, headname, 'rect', XOR.Color.WHITE, texture);
         let p = Vector3.make(i - APHeadCount * 0.5, j, gmZDistance);
         e.moveTo(p);
       }
+    }
+
+    for (let i = 0; i < FishCount; i++) {
+      let index = Fish1 + i;
+      let textures = ['fish1', 'fish2', 'fish3', 'fish4'];
+      let colors = [
+        XOR.Color.RED, XOR.Color.GREEN, XOR.Color.GOLD, XOR.Color.YELLOW,
+        XOR.Color.ORANGE
+      ];
+      let e = this.createPhysical(
+          index, 'fish' + i.toString(), 'rect01',
+          colors[(Math.random() * colors.length) | 0],
+          textures[(Math.random() * textures.length) | 0]);
+      e.moveTo(
+          GTE.vec3(
+              Math.random() * this.width,
+              Math.random() * FishRange + FishBottom, Math.random() * -6 + 3),
+          0);
+      e.physics.velocity.x =
+          (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
     }
   }
 
@@ -339,6 +393,7 @@ class Game {
     let angles2 = [10, 10, 10, 10];
 
     let travel = 0.8 + 0.1 * cos;
+    travel *= 2;
     const DegToRad = Math.PI / 180.0;
 
     for (let i = 0; i < APHeadCount; i++) {
@@ -351,8 +406,8 @@ class Game {
         let index = APArm1 + i * APArmCount + j;
         let e = this.entities.get(index);
         if (!e) continue;
-
-        e.moveTo(Vector3.make(x, y, gmZDistance));
+        let odd = j & 1;
+        e.moveTo(Vector3.make(x, y, gmZDistance + (odd ? -0.05 : 0.05)));
         x += travel * v.x;
         y += travel * v.y;
       }
@@ -361,7 +416,7 @@ class Game {
         let e = this.entities.get(APHead1 + i);
         if (!e) continue;
         e.position.scale.x = dir ? -1 : 1;
-        e.moveTo(Vector3.make(x, y, gmZDistance));
+        e.moveTo(Vector3.make(x, y, gmZDistance + 0.07 * i - 0.14));
       }
     }
   }
@@ -377,6 +432,21 @@ class Game {
       p1.direction = p1.physics.velocity.x < 0 ? -1 : 1;
       p1.position.scale.x = p1.direction;
     }
+    const MaxVelocityY = 3;
+    const Gravity = 40;
+    if (p1.physics.velocity.y >= -MaxVelocityY && p1.physics.velocity.y <= 0) {
+      p1.physics.velocity.y -= this.xor.dt * Gravity;
+    }
+
+    p1.position.position.x =
+        GTE.clamp(p1.position.position.x, PlayerLeft, PlayerRight);
+    p1.position.position.y =
+        GTE.clamp(p1.position.position.y, PlayerBottom, PlayerTop);
+
+    if (p1.x <= PlayerLeft && p1.vx < 0) p1.vx = 0;
+    if (p1.x >= PlayerRight && p1.vx > 0) p1.vx = 0;
+    if (p1.y >= PlayerTop && p1.vy > 0) p1.vy = 0;
+    if (p1.y <= PlayerBottom && p1.vy < 0) p1.vy = 0;
 
     p1.position.scale.y = p1.dead ? -1 : 1;
   }
@@ -394,14 +464,35 @@ class Game {
         p1.direction > 0 ? Vector3.make(1.0, 0, 0) : Vector3.make(-0.5, 0, 0);
     let p = p1.position.position.add(offset);
     s1.position.scale.copy(Vector3.make(p1.direction, 1, 1));
-    s1.moveTo(p, p1.position.angleInDegrees);
+    s1.x = p.x;
+    // s1.x = GTE.clamp(
+    //     offset.x + p1.x, p1.x + offset.x - 0.2, p1.x + offset.x - 0.2);
+    s1.y = GTE.clamp(s1.y, p.y - 0.1, p.y + 0.1);
+    // s1.moveTo(p, p1.position.angleInDegrees);
   }
 
 
   /**
    * Update the fishes that live under the sea
    */
-  updateFishes() {}
+  updateFishes() {
+    for (let i = 0; i < FishCount; i++) {
+      let theta = this.xor.t1 + i;
+      let cos = 0.005 * Math.cos(theta + Math.sin(i));
+      let index = Fish1 + i;
+      let e = this.entities.get(index);
+      if (!e) continue;
+      const fix = 2 * (PlayerRight - PlayerLeft);
+      if (e.position.position.x < -PlayerLeft * 2) e.position.position.x += fix;
+      if (e.position.position.x > PlayerRight * 2) e.position.position.x -= fix;
+      e.position.position.y =
+          GTE.clamp(e.position.position.y + cos, FishBottom, FishTop);
+      if (e.physics.velocity.x < 0) e.direction = -1;
+      if (e.physics.velocity.x > 0) e.direction = 1;
+      e.position.scale.x = e.direction;
+      e.moveTo(e.position.position);
+    }
+  }
 
 
   /**
@@ -412,10 +503,11 @@ class Game {
     this.updateBackground();
     this.updatePlantoid();
     this.updatePlayer();
-    this.updateSpears();
+    this.updateFishes();
     for (let e of this.entities) {
       e[1].update(dt)
     }
+    this.updateSpears();
   }
 
 

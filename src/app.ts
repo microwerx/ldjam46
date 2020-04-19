@@ -18,6 +18,8 @@ class Camera {
         GTE.clamp(this.eye.x, this.target.x - 0.1, this.target.x + 0.1);
     this.eye.y =
         GTE.clamp(this.eye.y, this.target.y - 0.1, this.target.y + 0.1);
+    this.eye.x = GTE.clamp(this.eye.x, PlayerLeft, PlayerRight);
+    this.eye.y = GTE.clamp(this.eye.y, PlayerBottom + 2, PlayerTop - 2);
   }
 
   get matrix(): Matrix4 {
@@ -477,11 +479,13 @@ class App {
   mainloop() {
     let self = this;
     window.requestAnimationFrame(async (t) => {
-      self.xor.startFrame(t);
-      self.xor.input.poll();
-      self.xor.sound.update();
-      self.update(self.xor.dt);
-      self.render();
+      if (this.xor.textfiles.loaded && this.xor.fluxions.textures.loaded) {
+        self.xor.startFrame(t);
+        self.xor.input.poll();
+        self.xor.sound.update();
+        self.update(self.xor.dt);
+        self.render();
+      }
       // self.renderHUD();
       await self.delay(1);
       self.mainloop();
@@ -496,5 +500,11 @@ class App {
 function startGame() {
   let app = new App();
   app.init();
+  // while (!app.xor.fluxions.textures.loaded) {
+  //   app.delay(5);
+  // }
+  // while (!app.xor.textfiles.loaded) {
+  //   app.delay(5);
+  // }
   app.start();
 }
