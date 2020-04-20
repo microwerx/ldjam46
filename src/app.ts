@@ -53,6 +53,8 @@ class App {
   SPACEbutton = 0;
   TABbutton = 0;
 
+  help = true;
+  loading = true;
   cameraZoom = 0;
   camera = new Camera();
 
@@ -82,25 +84,33 @@ class App {
       self.reset(1);
     });
     createButtonRow(controls, 'bNextLevel', 'Next Level', () => {
-      self.reset(this.game.level + 1);
+      self.xor.resetClock();
+      let level = this.game.level + 1;
+      this.help = true;
+      self.ecs = new XOR.ECS();
+      self.game = new Game(this.xor, this.ecs, this.width, this.height);
+      self.reset(level);
     });
     createButtonRow(controls, 'bZSDF', 'ZSDF/WASD', () => {
       self.euroKeys = 1 - self.euroKeys;
     });
-    createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
-    createCheckRow(controls, 'zasdKeys', false);
-    createRangeRow(controls, 'SOffsetX', 0, -8, 8);
-    createRangeRow(controls, 'SOffsetY', 0, -8, 8);
-    createRangeRow(controls, 'SZoomX', 1.0, 0.0, 4.0, 0.1);
-    createRangeRow(controls, 'SZoomY', 1.0, 0.0, 4.0, 0.1);
-    createRangeRow(controls, 'playTrack', 0, 0, 7);
-    createRangeRow(controls, 'sfxTrack', 0, 0, 15);
-    createButtonRow(controls, 'bPlayTrack', 'Play Track', () => {
-      self.playMusic(getRangeValue('playTrack'));
-    });
-    createButtonRow(controls, 'bPlaySFX', 'Play SFX', () => {
-      self.playSfx(getRangeValue('sfxTrack'));
-    });
+    createRangeRow(controls, 'fBreathRate', 0.3, 0.0, 1.0, 0.01);
+    createRangeRow(controls, 'fEatRate', 0.05, 0.0, 1.0, 0.01);
+    createRangeRow(controls, 'fKillDistance', 1.5, 1.0, 2.0, 0.05);
+    // createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
+    // createCheckRow(controls, 'zasdKeys', false);
+    // createRangeRow(controls, 'SOffsetX', 0, -8, 8);
+    // createRangeRow(controls, 'SOffsetY', 0, -8, 8);
+    // createRangeRow(controls, 'SZoomX', 1.0, 0.0, 4.0, 0.1);
+    // createRangeRow(controls, 'SZoomY', 1.0, 0.0, 4.0, 0.1);
+    // createRangeRow(controls, 'playTrack', 0, 0, 7);
+    // createRangeRow(controls, 'sfxTrack', 0, 0, 15);
+    // createButtonRow(controls, 'bPlayTrack', 'Play Track', () => {
+    //   self.playMusic(getRangeValue('playTrack'));
+    // });
+    // createButtonRow(controls, 'bPlaySFX', 'Play SFX', () => {
+    //   self.playSfx(getRangeValue('sfxTrack'));
+    // });
 
     this.xor.triggers.set('ESC', 60.0 / 120.0);
     this.xor.triggers.set('SPC', 0.033);
@@ -170,18 +180,11 @@ class App {
     this.xor.graphics.init();
     this.xor.graphics.setVideoMode(this.width, this.height);
 
-    this.hudCanvas.width = this.width;
-    this.hudCanvas.height = this.height;
-    // let p = document.getElementById(this.parentID);
-    // if (p) {
-    //   p.appendChild(this.hudCanvas);
-    // }
+    this.loadMusic();
+    this.loadSounds();
+    this.loadGraphics();
 
     this.reset();
-
-    this.loadGraphics();
-    this.loadSounds();
-    this.loadMusic();
   }
 
   loadGraphics() {
@@ -207,14 +210,16 @@ class App {
         WebGLRenderingContext.CLAMP_TO_EDGE;
     this.xor.fluxions.textures.defaultWrapT =
         WebGLRenderingContext.CLAMP_TO_EDGE;
+    this.xor.fluxions.textures.load('help', 'instructions.png');
     this.xor.fluxions.textures.load('seawall', 'images/seawall.png');
     this.xor.fluxions.textures.load('seafloor', 'images/seafloor.png');
     this.xor.fluxions.textures.load('spear1', 'images/spear1.png');
     this.xor.fluxions.textures.load('spear2', 'images/spear2.png');
+    this.xor.fluxions.textures.load('bubble', 'images/bubble.png');
     this.xor.fluxions.textures.load('water', 'images/water.png');
     this.xor.fluxions.textures.load('water21', 'images/water2_layer1.png');
     this.xor.fluxions.textures.load('water22', 'images/water2_layer2.png');
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 4; i++) {
       this.xor.fluxions.textures.load(
           'stem' + i.toString(), 'images/stem' + i.toString() + '.png');
       this.xor.fluxions.textures.load(
@@ -234,6 +239,8 @@ class App {
     this.xor.sound.sampler.loadSample(SFX_ERCK, 'sounds/sfx_erck.wav');
     this.xor.sound.sampler.loadSample(SFX_POOF, 'sounds/sfx_poof.wav');
     this.xor.sound.sampler.loadSample(SFX_DEAD, 'sounds/sfx_dead.wav');
+    this.xor.sound.sampler.loadSample(SFX_BUBBLE1, 'sounds/sfx_bubble1.wav');
+    this.xor.sound.sampler.loadSample(SFX_BUBBLE2, 'sounds/sfx_bubble2.wav');
     this.xor.sound.sampler.loadSample(SFX_EATEN1, 'sounds/sfx_plantoid1.wav');
     this.xor.sound.sampler.loadSample(SFX_EATEN2, 'sounds/sfx_plantoid2.wav');
     this.xor.sound.sampler.loadSample(SFX_EATEN3, 'sounds/sfx_plantoid3.wav');
@@ -265,6 +272,7 @@ class App {
    * reset game back to initial conditions
    */
   reset(level: number = 1) {
+    this.xor.t0 = this.xor.t1;
     let spr = this.xor.graphics.sprites[0];
     if (spr) {
       spr.enabled = true;
@@ -277,6 +285,7 @@ class App {
       spr.position.reset(58, 50, 0);
     }
 
+    this.xor.resetClock();
     this.game.reset(level);
     this.game.pauseGame = false;
   }
@@ -285,6 +294,8 @@ class App {
    * start the main loop
    */
   start() {
+    this.game.gameStarted = false;
+    this.game.update(0);
     this.mainloop();
   }
 
@@ -297,21 +308,33 @@ class App {
     xor.input.poll();
     this.updateControls();
 
-    if (xor.input.checkKeys([' ', 'Space'])) {
-      this.reset();
+    // if (xor.input.checkKeys([' ', 'Space'])) {
+    //   this.reset();
+    // }
+
+    this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
+    if (this.ENTERbutton) xor.input.resetKeys(['Enter', 'Return']);
+    if (this.help) {
+      if (!this.ENTERbutton) return;
+      this.help = false;
+    }
+    if (!this.game.gameStarted || this.game.gameOver) {
+      if (xor.input.checkKeys(['Enter', 'Return'])) {
+        xor.input.resetKeys(['Enter', 'Return']);
+        this.game.reset(1);
+      }
+      return;
     }
 
     if (xor.input.checkKeys(['Escape'])) {
       if (xor.triggers.get('ESC').tick(xor.t1)) {
         this.game.pauseGame = !this.game.pauseGame;
-        hflog.info(this.game.pauseGame ? 'paused' : 'not paused');
       }
     }
 
     if (xor.input.checkKeys(['Space'])) {
       xor.input.resetKeys(['Space']);
       if (xor.triggers.get('SPC').tick(xor.t1)) {
-        hflog.info('pew!');
       }
     }
 
@@ -372,7 +395,9 @@ class App {
       p2.velocity = Vector3.makeUnit(this.click.x, this.click.y, 0);
     }
 
-    this.game.update(dt);
+    if (!this.game.pauseGame) {
+      this.game.update(dt);
+    }
 
     this.theta += dt;
   }
@@ -382,10 +407,14 @@ class App {
    */
   updateControls() {
     let xor = this.xor;
-    xor.graphics.setOffset(
-        getRangeValue('SOffsetX'), getRangeValue('SOffsetY'));
-    xor.graphics.setZoom(getRangeValue('SZoomX'), getRangeValue('SZoomY'));
-    this.cameraZoom = getRangeValue('fZoom');
+    // xor.graphics.setOffset(
+    //     getRangeValue('SOffsetX'), getRangeValue('SOffsetY'));
+    // xor.graphics.setZoom(getRangeValue('SZoomX'), getRangeValue('SZoomY'));
+    // this.cameraZoom = getRangeValue('fZoom');
+    PlantoidEatRate = getRangeValue('fEatRate');
+    PlayerBreathRate = getRangeValue('fBreathRate');
+    APKillDistance = getRangeValue('fKillDistance');
+    setDivLabelValue('bNextLevel', this.game.level.toString());
   }
 
 
@@ -395,10 +424,6 @@ class App {
   render() {
     let xor = this.xor;
     xor.graphics.clear(XOR.Color.AZURE, XOR.Color.WHITE, 5);
-
-    if (!this.game.pauseGame) {
-      xor.graphics.render();
-    }
 
     let pmatrix = Matrix4.makePerspectiveY(45.0, 1.5, 1.0, 120.0);
     this.camera.update(this.game.playerPosition);
@@ -428,13 +453,36 @@ class App {
     }
   }
 
-  drawText(text: string, y: number, color: string, shadowOffset: number) {
+  drawText(
+      text: string, y: number, color: string, shadowOffset: number,
+      alpha: number) {
     let tm = this.hud2D.measureText(text);
     let cx = ((this.width - tm.width) >> 1);
-    this.hud2D.fillStyle = '#000000';
-    this.hud2D.fillText(text, cx + 4, y + 4);
+    let a = GTE.clamp((255.99 * alpha) | 0, 0, 255).toString(16);
+    if (a.length == 1) a = '0' + a;
+    if (shadowOffset > 0) {
+      this.hud2D.fillStyle = '#000000' + a;
+      this.hud2D.fillText(text, cx - shadowOffset, y - shadowOffset);
+    }
+    this.hud2D.fillStyle = color + a;
+    this.hud2D.fillText(text, cx, y);
+  }
+
+  drawTextLeft(text: string, x: number, y: number, color: string) {
     this.hud2D.fillStyle = color;
-    this.hud2D.fillText(text, cx + shadowOffset, y + shadowOffset);
+    this.hud2D.fillText(text, x, y);
+  }
+
+  drawMeter(
+      percent: number, x: number, y: number, w: number, h: number,
+      stroke: string, fill: string, label: string) {
+    this.hud2D.strokeStyle = stroke;
+    this.hud2D.fillStyle = fill;
+    this.hud2D.fillRect(x, y, (w * percent) | 0, h);
+    this.hud2D.strokeRect(x, y, w, h);
+    this.hud2D.font = (h - 4).toString() + 'px Pedrita';
+    this.drawTextLeft(label, x + 6, y + h - 2, '#000000');
+    this.drawTextLeft(label, x + 10, y + h - 6, '#ffffff');
   }
 
   /**
@@ -445,12 +493,69 @@ class App {
     let xor = this.xor;
     let gl = this.xor.fluxions.gl;
     let ox = 2 + 2 * (0.5 + 0.5 * Math.cos(this.xor.t1));
+    let cycle = 0.75 + 0.25 * Math.cos(this.xor.t1);
 
     this.hud2D.clearRect(0, 0, this.width, this.height);
     this.hud2D.font = '64px Pedrita';
 
-    this.drawText('Atlantoid', 64, '#ff0000', ox);
-    this.drawText('Plantoid', 128, '#00ff00', ox);
+    if (this.xor.t1 < 10) {
+      let t = this.xor.t1 < 5 ? 1 : 1 - (this.xor.t1 - 5) / 5.0;
+      let green = xor.palette.getHtmlColor(GTE.vec3(0, cycle, 0));
+      let red = xor.palette.getHtmlColor(GTE.vec3(cycle, 0, 0));
+      this.drawText('Atlantoid', 64, green, ox, t);
+      this.drawText('Plantoid', 128, red, ox, t);
+    }
+
+    this.hud2D.font = '32px Pedrita';
+    this.drawTextLeft(
+        'Lives: ' + this.game.numLives.toString(), 0, 32, '#ffffff');
+
+    if (this.loading) {
+      let color = this.xor.palette.getHtmlColor(GTE.vec3(cycle, cycle, cycle));
+      this.hud2D.font = '64px Pedrita';
+      this.drawText('Loading', 256, color, 4, 1);
+    }
+
+    if (this.game.pauseGame) {
+      let color = this.xor.palette.getHtmlColor(GTE.vec3(cycle, cycle, cycle));
+      this.hud2D.font = '64px Pedrita';
+      this.drawText('Paused', 256, color, 4, 1);
+    }
+
+    if (!this.game.gameStarted) {
+      let color = this.xor.palette.getHtmlColor(GTE.vec3(cycle, cycle, cycle));
+      this.hud2D.font = '64px Pedrita';
+      this.drawText('Want to Play?', 256, color, 4, 1);
+      this.hud2D.font = '48px Pedrita';
+      this.drawText('Press ENTER to Start', 320, color, 4, 1);
+    }
+
+    if (this.game.gameOver) {
+      let fade = this.xor.t1 - this.game.gameOverTime;
+      let color = this.xor.palette.getHtmlColor(GTE.vec3(cycle, cycle, cycle));
+      this.hud2D.font = '64px Pedrita';
+      this.drawText('Game Over!', 256, color, 4, fade);
+      this.hud2D.font = '48px Pedrita';
+      this.drawText('Press ENTER to Start', 320, color, 4, fade);
+    }
+
+    // render breath
+
+    this.drawMeter(
+        this.game.playerBreath / MaxPlayerBreath, this.width - 204, 4, 200, 32,
+        '#0000ff', '#0072E4', 'Air');
+
+    this.drawMeter(
+        this.game.plantoidHealth, (this.width >> 1) - 200, 4, 200, 32,
+        '#00ff00', '#00ff00', 'AP');
+
+    // render creature health
+    for (let i = 0; i < this.game.levelInfo.numHeads; i++) {
+      this.drawTextLeft(
+          this.game.plantoidHealths[i].toString() + '/' +
+              this.game.plantoidHungers[i].toFixed(2),
+          i * 80, 64, '#ffffff');
+    }
 
     let image = this.hud2D.getImageData(0, 0, 640, 512);
 
@@ -474,10 +579,16 @@ class App {
       rc.uniform1f('MapKdMix', 1.0);
       rc.uniform3f('Kd', Vector3.make(1.0, 1.0, 1.0));
       rc.uniform1i('MapKd', 0);
-      // this.xor.fluxions.textures.get('player1')?.bindUnit(0);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      xor.meshes.render('rect', rc);
+
+      if (this.help) {
+        this.xor.fluxions.textures.get('help')?.bindUnit(0);
+        xor.meshes.render('rect', rc);
+      } else {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        xor.meshes.render('rect', rc);
+      }
+
       rc.restore();
     }
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -499,14 +610,18 @@ class App {
   mainloop() {
     let self = this;
     window.requestAnimationFrame(async (t) => {
-      if (this.xor.textfiles.loaded && this.xor.fluxions.textures.loaded) {
-        self.xor.startFrame(t);
+      self.xor.startFrame(t);
+      if (this.xor.textfiles.loaded && this.xor.fluxions.textures.loaded &&
+          this.xor.sound.loaded) {
+        this.loading = false;
         self.xor.input.poll();
         self.xor.sound.update();
         self.update(self.xor.dt);
         self.render();
+      } else {
+        this.loading = true;
       }
-      // self.renderHUD();
+      self.renderHUD();
       await self.delay(1);
       self.mainloop();
     });

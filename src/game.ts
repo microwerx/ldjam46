@@ -128,20 +128,15 @@ const Player1Spear = 3
 const Player2Spear = 4
 
 const APHead1 = 20
-const APHead2 = 21
-const APHead3 = 22
-const APHead4 = 23
-const APHeadCount = 4
+const APCount = 10
 
 const APArm1 = 30
-const APArm2 = 31
-const APArm3 = 32
-const APArm4 = 33
-const APArmCount = 4
-const APArmSegments = 3
+const APArmSegments = 10
 
-const Fish1 = 100
-const FishCount = 64
+const APBubble1 = 300;
+
+const Fish1 = 500
+const FishCount = 128;
 const FishBottom = -45;
 const FishTop = -15;
 const FishRange = FishTop - FishBottom;
@@ -151,11 +146,15 @@ const PlayerTop = FishTop + 2;
 const PlayerLeft = -9;
 const PlayerRight = 8;
 
-const BackdropStart = 200
+const BackdropStart = 900
 const BackdropCount = 50;
 const BackdropEnd = BackdropStart + BackdropCount;
 const BackdropBlank1 = BackdropEnd + 1;
 const BackdropBlank2 = BackdropEnd + 2;
+
+const MaxPlayerBreath = 20;
+const FishPointsPerArm = 5;
+const MaxPlantoidHealth = APCount * APArmSegments * FishPointsPerArm;
 
 const SFX_BEEP = 0;
 const SFX_DOOP = 1;
@@ -184,16 +183,40 @@ const MUS_DEAD = 2;
 
 const bgZDistance = -14;
 const gmZDistance = 0;
-const APKillDistance = 1.5;
+let APKillDistance = 1.5;
+let PlayerBreathRate = 0.25;
+let PlantoidEatRate = 0.05;
 
 class LevelInfo {
-  playerPosition = GTE.vec3(0, FishBottom, gmZDistance + 0.1);
+  playerPosition = GTE.vec3(0, FishBottom + 5, gmZDistance + 0.1);
   plantoidPosition = Vector3.make(0, FishBottom - 5, gmZDistance);
-  constructor(public numHeads: number, public storminess: number) {}
+  angles = [230, 190, 70, 25, 80, 10, 260, 100, 120, 160];
+  angles1 = [-10, -10, -10, -10, -10, -10, -10, -10, -10, -10];
+  angles2 = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10];
+
+  plantoidHealths: number[] = [1, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+  plantoidHungers: number[] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+  constructor(
+      public numHeads: number, public numSegments: number,
+      public storminess: number) {
+    for (let i = 0; i < this.angles.length; i++) {
+      this.angles[i] += randBetween(this.angles1[i], this.angles2[i]);
+    }
+    for (let i = 0; i < numSegments; i++) {
+      this.plantoidHealths[i] = (Math.random() * numSegments) | 0;
+    }
+  }
+
+  sway(i: number, sin: number) {
+    return this.angles[i] + mix(this.angles1[i], this.angles2[i], sin);
+  }
 }
 
-const levels =
-    [new LevelInfo(1, 0.3), new LevelInfo(2, 0.5), new LevelInfo(3, 0.4)];
+const levels = [
+  new LevelInfo(3, 3, 0.3), new LevelInfo(4, 4, 0.5), new LevelInfo(5, 5, 0.4),
+  new LevelInfo(6, 5, 0.4), new LevelInfo(6, 6, 0.4), new LevelInfo(6, 10, 0.4)
+];
 
 class Game {
   readonly bboxSizeOne = new GTE.BoundingBox(
@@ -206,6 +229,17 @@ class Game {
   level = 1;
   levelInfo = levels[this.level];
   pauseGame = false;
+  gameStarted = false;
+  gameOver = false;
+  gameOverTime = 0;
+
+  plantoidHealths: number[] = [1, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+  plantoidHungers: number[] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  playerHealth = 20;
+  playerBreath = 20;
+  highestPlantY = FishBottom;
+
+  numLives = 0;
 
   constructor(
       public xor: LibXOR, public ecs: XOR.ECS, readonly width: number,
@@ -247,48 +281,44 @@ class Game {
     if (b2) b2.render.texture = 'water22';
 
     // Create Atlantoid Plantoid Entity
-    for (let i = 0; i < APHeadCount; i++) {
+    for (let i = 0; i < APCount; i++) {
+      // segments
       for (let j = 0; j < APArmSegments; j++) {
-        let index = APArm1 + i * APArmCount + j;
+        let index = APArm1 + i * APCount + j;
         const armname = 'aparm' + (i + 1).toString() + (j + 1).toString();
         let textures = ['stem1', 'stem2', 'stem3'];
         let texture = textures[(Math.random() * textures.length) | 0];
         let e = this.createPhysical(
             index, armname, 'rect', XOR.Color.WHITE, texture);
-        let p = Vector3.make(i - APHeadCount * 0.5, j, gmZDistance);
+        let p = Vector3.make(i - APCount * 0.5, j, gmZDistance);
         e.moveTo(p);
       }
+      // heads
       {
         const j = APArmSegments;
         const headname = 'aphead' + (i + 1).toString();
-        let textures = ['plantoid1', 'plantoid2', 'plantoid3'];
+        let textures = ['plantoid1', 'plantoid2', 'plantoid3', 'plantoid4'];
         let texture = textures[(Math.random() * textures.length) | 0];
         let e = this.createPhysical(
             APHead1 + i, headname, 'rect', XOR.Color.WHITE, texture);
-        let p = Vector3.make(i - APHeadCount * 0.5, j, gmZDistance);
+        let p = Vector3.make(i - APCount * 0.5, j, gmZDistance);
         e.moveTo(p);
+      }
+      // bubbles
+      {
+        const j = APArmSegments + 2;
+        let e = this.createPhysical(
+            APBubble1 + i, 'bubble' + i.toString(), 'rect', XOR.Color.WHITE,
+            'bubble');
+        let p = Vector3.make(i - APCount * 0.5, j, gmZDistance);
+        e.moveTo(p)
       }
     }
 
     for (let i = 0; i < FishCount; i++) {
       let index = Fish1 + i;
-      let textures = ['fish1', 'fish2', 'fish3', 'fish4'];
-      let colors = [
-        XOR.Color.RED, XOR.Color.GREEN, XOR.Color.GOLD, XOR.Color.YELLOW,
-        XOR.Color.ORANGE
-      ];
       let e = this.createPhysical(
-          index, 'fish' + i.toString(), 'rect01',
-          XOR.Color.CYAN,  // colors[(Math.random() * colors.length) | 0],
-          'fish1');        // textures[(Math.random() * textures.length) | 0]);
-      //   e.moveTo(
-      //       GTE.vec3(
-      //           Math.random() * this.width,
-      //           Math.random() * FishRange + FishBottom, Math.random() * -6 +
-      //           3),
-      //       0);
-      //   e.physics.velocity.x =
-      //       (Math.random() * 0.25 + 0.75) * (Math.random() > 0.5 ? -1 : 1);
+          index, 'fish' + i.toString(), 'rect01', XOR.Color.CYAN, 'fish1');
       this.spawnFish(e);
     }
   }
@@ -298,6 +328,15 @@ class Game {
     let e = this.entities.get(Player1);
     if (e) return e.position.position;
     return Vector3.make(0, 0, 0);
+  }
+
+
+  get plantoidHealth(): number {
+    let health = 0;
+    for (let i = 0; i < this.levelInfo.numHeads; i++) {
+      health += this.plantoidHealths[i] + this.plantoidHungers[i] - 1;
+    }
+    return health / (this.levelInfo.numHeads * this.levelInfo.numSegments);
   }
 
 
@@ -401,15 +440,44 @@ class Game {
    * @param level which level to begin at
    */
   reset(level: number) {
-    if (level > levels.length) level = 1;
-    this.level = level;
-    this.levelInfo = levels[this.level - 1];
-    let e = this.entities.get(Player1);
-    if (!e) return;
-    e.moveTo(this.levelInfo.playerPosition);
-    e.dead = 0;
+    if (this.numLives == 0) {
+      if (level > levels.length) level = 1;
+      this.level = level;
+      this.levelInfo = levels[this.level - 1];
+      this.numLives = 5;
+      this.playMusic(MUS_GAME);
+    }
 
-    this.playMusic(MUS_GAME);
+    for (let i = 0; i < FishCount; i += 2) {
+      let e = this.entities.get(Fish1 + i);
+      if (e) this.spawnFish(e);
+    }
+
+    let e = this.player;
+    e.moveTo(GTE.vec3(0, this.highestPlantY + 4, 0));
+    e.dead = 0;
+    this.gameOver = false;
+    this.gameStarted = true;
+  }
+
+  get player(): GameEntity {
+    let e = this.entities.get(Player1);
+    if (!e) throw 'No player!';
+    return e;
+  }
+
+  /**
+   * event triggered when game is lost
+   */
+  loseGame() {
+    this.numLives--;
+    if (this.numLives == 0) {
+      this.gameOver = true;
+      this.gameOverTime = this.xor.t1;
+      this.playMusic(MUS_WAVE);
+    } else {
+      this.gameStarted = false;
+    }
   }
 
 
@@ -456,17 +524,12 @@ class Game {
     let p1 = this.entities.get(Player1);
     let b1 = this.entities.get(BackdropBlank1);
     if (b1 && p1) {
-      //   let p = p1.position.position.add(
-      //       Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta),
-      //       -1))
       let p =
           Vector3.make(Math.cos(0.1234 * theta), Math.sin(0.3456 * theta), -75);
       b1.moveTo(p);
     }
     let b2 = this.entities.get(BackdropBlank2);
     if (b2 && p1) {
-      //   let p = p1.position.position.add(Vector3.make(
-      //       Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -1));
       let p = Vector3.make(
           Math.cos(1 + 0.1234 * theta), Math.sin(1 + 0.3456 * theta), -75);
       b2.moveTo(p);
@@ -481,35 +544,81 @@ class Game {
     let dir = theta & 1;
     let cos = Math.cos(theta);
     let sin = Math.sin(theta * 2.234);
-    let angles = [230, 190, 70, 25];
-    let angles1 = [-10, -10, -10, -10];
-    let angles2 = [10, 10, 10, 10];
 
     let travel = 0.8 + 0.1 * cos;
     travel *= 2;
     const DegToRad = Math.PI / 180.0;
 
-    for (let i = 0; i < APHeadCount; i++) {
-      let x = this.levelInfo.plantoidPosition.x + 2 * (i - 0.5 * APHeadCount);
-      let y = this.levelInfo.plantoidPosition.y;
-      for (let j = 0; j < APArmSegments; j++) {
-        let sway = angles[i] + mix(angles1[i], angles2[i], sin);
-        let v = Vector3.makeUnit(Math.cos(sway * DegToRad), 1.0, 0.0);
+    this.highestPlantY = PlayerBottom;
 
-        let index = APArm1 + i * APArmCount + j;
+    const APCount = this.levelInfo.numHeads;
+
+    for (let i = 0; i < APCount; i++) {
+      // Plants die if they are not fed
+      this.plantoidHungers[i] -= PlantoidEatRate * this.xor.dt;
+      // if too hungry, die a little
+      if (this.plantoidHungers[i] < 0) {
+        this.plantoidHealths[i]--;
+        this.plantoidHungers[i] = 1;
+      }
+      // if too full, grow a little
+      if (this.plantoidHungers[i] > 1) {
+        this.plantoidHealths[i]++;
+        this.plantoidHungers[i] = 1;
+      }
+      // make sure we never go out of range
+      this.plantoidHealths[i] =
+          GTE.clamp(this.plantoidHealths[i], 0, this.levelInfo.numSegments);
+      let phunger = this.plantoidHungers[i];
+
+      let x = this.levelInfo.plantoidPosition.x + 2 * (i - 0.5 * APCount);
+      let y = this.levelInfo.plantoidPosition.y;
+      let sway = this.levelInfo.sway(i, sin);
+      let v = Vector3.makeUnit(Math.cos(sway * DegToRad), 1.0, 0.0);
+
+      const numArmSegments = this.plantoidHealths[i];
+
+      for (let j = 0; j < numArmSegments; j++) {
+        let index = APArm1 + i * APCount + j;
+        let e = this.entities.get(index);
+        if (!e) continue;
+        e.active = this.plantoidHealths[i] >= j ? 1 : 0;
+      }
+
+      for (let j = 0; j < numArmSegments; j++) {
+        let index = APArm1 + i * APCount + j;
         let e = this.entities.get(index);
         if (!e) continue;
         let odd = j & 1;
         e.moveTo(Vector3.make(x, y, gmZDistance + (odd ? -0.05 : 0.05)));
-        x += travel * v.x;
-        y += travel * v.y;
+        if (j == numArmSegments - 1) {
+          x += phunger * travel * v.x;
+          y += phunger * travel * v.y;
+        } else {
+          x += travel * v.x;
+          y += travel * v.y;
+        }
       }
 
+      // heads
+      let he = this.entities.get(APHead1 + i);
+      if (!he) continue;
+      if (this.plantoidHealths[i] < 0) he.dead = 1;
+      he.position.scale.x = dir ? -1 : 1;
+      he.moveTo(Vector3.make(x, y, gmZDistance + 0.07 * i - 0.14));
+      let droop = 0 + phunger * (this.levelInfo.angles[i] < 90 ? -10 : 10);
+      he.position.angleInDegrees = droop;
+
+      this.highestPlantY = Math.max(he.y, this.highestPlantY);
+
+      // bubbles
       {
-        let e = this.entities.get(APHead1 + i);
+        x = he.x + Math.cos(theta + 0.1234);
+        y = he.y + Math.sin(theta / 2.123) + 2 * v.y;
+        let e = this.entities.get(APBubble1 + i);
         if (!e) continue;
-        e.position.scale.x = dir ? -1 : 1;
-        e.moveTo(Vector3.make(x, y, gmZDistance + 0.07 * i - 0.14));
+        e.moveTo(GTE.vec3(x, y, gmZDistance));
+        if (he.dead) e.dead = 1;
       }
     }
   }
@@ -540,6 +649,14 @@ class Game {
     if (p1.x >= PlayerRight && p1.vx > 0) p1.vx = 0;
     if (p1.y >= PlayerTop && p1.vy > 0) p1.vy = 0;
     if (p1.y <= PlayerBottom && p1.vy < 0) p1.vy = 0;
+
+    this.playerBreath = GTE.clamp(
+        this.playerBreath - PlayerBreathRate * this.xor.dt, 0, MaxPlayerBreath);
+    if (this.playerBreath == 0 && !p1.dead) {
+      this.loseGame();
+      this.playSound(SFX_DEAD);
+      p1.dead = 1;
+    }
 
     p1.position.scale.y = p1.dead ? -1 : 1;
     if (p1.dead) {
@@ -619,16 +736,23 @@ class Game {
           this.playSound(SFX_FishDead1 + randRange(SFX_FishDeadCount));
         }
       }
+
       if (!fe.eating && fe.dead && fe.y > PlayerBottom) {
-        for (let ap = 0; ap < APHeadCount; ap++) {
+        for (let ap = 0; ap < APCount; ap++) {
           let ape = this.entities.get(APHead1 + ap);
           if (!ape) continue;
           if (!ape.dead) {
             let apep = GTE.vec3(ape.x, ape.y, 0);
             if (fep.distance(apep) < APKillDistance) {
+              this.plantoidHungers[ap] += PlantoidEatRate * 10;
               fe.eating = 1;
               fe.eatingTime = this.xor.t1 + 1;
               this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
+              let be = this.entities.get(APBubble1 + ap);
+              if (be) {
+                be.dead = 0;
+                be.active = 1;
+              }
             }
           }
         }
@@ -652,18 +776,29 @@ class Game {
     let pe = this.entities.get(Player1);
     if (!pe) return;
     if (!pe.dead) {
-      for (let ap = 0; ap < APHeadCount; ap++) {
+      let pep = GTE.vec3(pe.x, pe.y, 0);
+
+      for (let ap = 0; ap < APCount; ap++) {
         let ape = this.entities.get(APHead1 + ap);
         if (!ape) continue;
         if (!ape.dead) {
-          let pep = GTE.vec3(pe.x, pe.y, 0);
           let apep = GTE.vec3(ape.x, ape.y, 0);
           if (pep.distance(apep) < APKillDistance) {
             pe.dead = 1;
+            this.loseGame();
             this.playSound(SFX_DEAD);
             this.playSound(SFX_EATEN1 + randRange(SFX_EatenCount));
-            this.playMusic(MUS_WAVE);
           }
+        }
+
+        let be = this.entities.get(APBubble1 + ap);
+        if (be && !be.dead &&
+            pep.distance(GTE.vec3(be.x, be.y, 0)) < APKillDistance) {
+          this.playerBreath =
+              GTE.clamp(this.playerBreath + 10, 0, MaxPlayerBreath);
+          this.playSound(SFX_BUBBLE1 + (Math.random() > 0.5 ? 1 : 0))
+          be.dead = 1;
+          be.active = 0;
         }
       }
     }

@@ -42,6 +42,11 @@ h6 {
     line-height: 100%;
 }
 
+h5 {
+    font-size: 1.5em;
+    line-height: 150%;
+}
+
 h1 {
     font-size: 2em;
     padding: 0em;
@@ -63,6 +68,7 @@ hr {
 .log {
     font-family: PragmataPro, monospace;
     font-size: 0.5em;
+    text-align: left;
 }
 
 .red {
@@ -131,4 +137,69 @@ hr {
 
 .xor-forestgreen {
     color: #3F7F3F
+}
+
+.centered {
+    text-align: center;
+    vertical-align: middle;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.centered-block {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.dropcapimage {
+    width: 1in;
+    border-radius: 5px;
+    image-rendering: pixelated;
+}
+
+.column {
+    float: left;
+    padding: 0em;
+}
+
+.left {
+    width: 20%;
+}
+
+.right {
+    width: 60%;
+}
+
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.cell-block-clear {
+    vertical-align: top;
+    display: inline-block;
+    border-radius: 5px;
+    height: 100%;
+}
+
+.cell-block-dark {
+    vertical-align: top;
+    display: inline-block;
+    background: #dddddd;
+    border-radius: 5px;
+    height: 100%;
+}
+
+.cell-block-light {
+    vertical-align: top;
+    display: inline-block;
+    background: #eeeeee;
+    border-radius: 5px;
+    height: 100%;
 }

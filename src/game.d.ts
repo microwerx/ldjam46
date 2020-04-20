@@ -241,18 +241,12 @@ declare const Player2 = 2;
 declare const Player1Spear = 3;
 declare const Player2Spear = 4;
 declare const APHead1 = 20;
-declare const APHead2 = 21;
-declare const APHead3 = 22;
-declare const APHead4 = 23;
-declare const APHeadCount = 4;
+declare const APCount = 10;
 declare const APArm1 = 30;
-declare const APArm2 = 31;
-declare const APArm3 = 32;
-declare const APArm4 = 33;
-declare const APArmCount = 4;
-declare const APArmSegments = 3;
-declare const Fish1 = 100;
-declare const FishCount = 64;
+declare const APArmSegments = 10;
+declare const APBubble1 = 300;
+declare const Fish1 = 500;
+declare const FishCount = 128;
 declare const FishBottom = -45;
 declare const FishTop = -15;
 declare const FishRange: number;
@@ -260,11 +254,14 @@ declare const PlayerBottom: number;
 declare const PlayerTop: number;
 declare const PlayerLeft = -9;
 declare const PlayerRight = 8;
-declare const BackdropStart = 200;
+declare const BackdropStart = 900;
 declare const BackdropCount = 50;
 declare const BackdropEnd: number;
 declare const BackdropBlank1: number;
 declare const BackdropBlank2: number;
+declare const MaxPlayerBreath = 20;
+declare const FishPointsPerArm = 5;
+declare const MaxPlantoidHealth: number;
 declare const SFX_BEEP = 0;
 declare const SFX_DOOP = 1;
 declare const SFX_POOF = 2;
@@ -287,13 +284,22 @@ declare const MUS_GAME = 1;
 declare const MUS_DEAD = 2;
 declare const bgZDistance = -14;
 declare const gmZDistance = 0;
-declare const APKillDistance = 1.5;
+declare let APKillDistance: number;
+declare let PlayerBreathRate: number;
+declare let PlantoidEatRate: number;
 declare class LevelInfo {
     numHeads: number;
+    numSegments: number;
     storminess: number;
     playerPosition: Vector3;
     plantoidPosition: Vector3;
-    constructor(numHeads: number, storminess: number);
+    angles: number[];
+    angles1: number[];
+    angles2: number[];
+    plantoidHealths: number[];
+    plantoidHungers: number[];
+    constructor(numHeads: number, numSegments: number, storminess: number);
+    sway(i: number, sin: number): number;
 }
 declare const levels: LevelInfo[];
 declare class Game {
@@ -308,8 +314,18 @@ declare class Game {
     level: number;
     levelInfo: LevelInfo;
     pauseGame: boolean;
+    gameStarted: boolean;
+    gameOver: boolean;
+    gameOverTime: number;
+    plantoidHealths: number[];
+    plantoidHungers: number[];
+    playerHealth: number;
+    playerBreath: number;
+    highestPlantY: number;
+    numLives: number;
     constructor(xor: LibXOR, ecs: XOR.ECS, width: number, height: number);
     get playerPosition(): Vector3;
+    get plantoidHealth(): number;
     /**
      * create a new physical entity with position, velocity, and render components
      * @param name name of the entity
@@ -348,6 +364,11 @@ declare class Game {
      * @param level which level to begin at
      */
     reset(level: number): void;
+    get player(): GameEntity;
+    /**
+     * event triggered when game is lost
+     */
+    loseGame(): void;
     spawnFish(fe: GameEntity): void;
     /**
      * update background elements such as the waves
@@ -417,6 +438,8 @@ declare class App {
     BACKbutton: number;
     SPACEbutton: number;
     TABbutton: number;
+    help: boolean;
+    loading: boolean;
     cameraZoom: number;
     camera: Camera;
     ecs: XOR.ECS;
@@ -468,7 +491,9 @@ declare class App {
      * render the 3D graphics for the game
      */
     render(): void;
-    drawText(text: string, y: number, color: string, shadowOffset: number): void;
+    drawText(text: string, y: number, color: string, shadowOffset: number, alpha: number): void;
+    drawTextLeft(text: string, x: number, y: number, color: string): void;
+    drawMeter(percent: number, x: number, y: number, w: number, h: number, stroke: string, fill: string, label: string): void;
     /**
      * Render the 2D overlay for the game
      */
