@@ -670,7 +670,7 @@ class LevelInfo {
     }
 }
 const levels = [
-    new LevelInfo(3, 3, 0.3), new LevelInfo(4, 4, 0.5), new LevelInfo(5, 5, 0.4),
+    new LevelInfo(4, 6, 0.3), new LevelInfo(4, 4, 0.5), new LevelInfo(5, 5, 0.4),
     new LevelInfo(6, 5, 0.4), new LevelInfo(6, 6, 0.4), new LevelInfo(6, 10, 0.4)
 ];
 class Game {
@@ -868,6 +868,7 @@ class Game {
         let e = this.player;
         e.moveTo(GTE.vec3(0, this.highestPlantY + 4, 0));
         e.dead = 0;
+        this.playerBreath = 20;
         this.gameOver = false;
         this.gameStarted = true;
     }
@@ -1263,6 +1264,7 @@ class App {
         this.xor = new LibXOR(this.parentID);
         this.width = 640;
         this.height = 512;
+        // hudCanvas = document.createElement('canvas');
         this.hudCanvas = new OffscreenCanvas(this.width, this.height);
         this.theta = 0;
         this.mouse = Vector3.make(0, 0, 0);
@@ -1317,7 +1319,7 @@ class App {
         createButtonRow(controls, 'bZSDF', 'ZSDF/WASD', () => {
             self.euroKeys = 1 - self.euroKeys;
         });
-        createRangeRow(controls, 'fBreathRate', 0.3, 0.0, 1.0, 0.01);
+        createRangeRow(controls, 'fBreathRate', 0.40, 0.0, 1.0, 0.01);
         createRangeRow(controls, 'fEatRate', 0.05, 0.0, 1.0, 0.01);
         createRangeRow(controls, 'fKillDistance', 1.5, 1.0, 2.0, 0.05);
         // createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
@@ -1503,7 +1505,10 @@ class App {
         // if (xor.input.checkKeys([' ', 'Space'])) {
         //   this.reset();
         // }
-        this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
+        if (xor.input.mouseOver && xor.input.mouseButtons.get(0))
+            this.ENTERbutton = 1;
+        else
+            this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
         if (this.ENTERbutton)
             xor.input.resetKeys(['Enter', 'Return']);
         if (this.help) {
@@ -1516,6 +1521,7 @@ class App {
                 xor.input.resetKeys(['Enter', 'Return']);
                 this.game.reset(1);
             }
+            this.game.update(dt);
             return;
         }
         if (xor.input.checkKeys(['Escape'])) {

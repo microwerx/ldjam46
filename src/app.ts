@@ -32,6 +32,7 @@ class App {
   xor = new LibXOR(this.parentID);
   readonly width = 640;
   readonly height = 512;
+  // hudCanvas = document.createElement('canvas');
   hudCanvas = new OffscreenCanvas(this.width, this.height);
   hud2D: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
   theta = 0;
@@ -94,7 +95,7 @@ class App {
     createButtonRow(controls, 'bZSDF', 'ZSDF/WASD', () => {
       self.euroKeys = 1 - self.euroKeys;
     });
-    createRangeRow(controls, 'fBreathRate', 0.3, 0.0, 1.0, 0.01);
+    createRangeRow(controls, 'fBreathRate', 0.40, 0.0, 1.0, 0.01);
     createRangeRow(controls, 'fEatRate', 0.05, 0.0, 1.0, 0.01);
     createRangeRow(controls, 'fKillDistance', 1.5, 1.0, 2.0, 0.05);
     // createRangeRow(controls, 'fZoom', 0.0, 0.0, 1.0, 0.01);
@@ -312,7 +313,11 @@ class App {
     //   this.reset();
     // }
 
-    this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
+    if (xor.input.mouseOver && xor.input.mouseButtons.get(0))
+      this.ENTERbutton = 1;
+    else
+      this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
+
     if (this.ENTERbutton) xor.input.resetKeys(['Enter', 'Return']);
     if (this.help) {
       if (!this.ENTERbutton) return;
@@ -323,6 +328,7 @@ class App {
         xor.input.resetKeys(['Enter', 'Return']);
         this.game.reset(1);
       }
+      this.game.update(dt);
       return;
     }
 
