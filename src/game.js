@@ -1037,6 +1037,8 @@ class Game {
             GTE.clamp(p1.position.position.x, PlayerLeft, PlayerRight);
         p1.position.position.y =
             GTE.clamp(p1.position.position.y, PlayerBottom, PlayerTop);
+        if (p1.y == PlayerTop)
+            this.playerBreath = MaxPlayerBreath;
         if (p1.x <= PlayerLeft && p1.vx < 0)
             p1.vx = 0;
         if (p1.x >= PlayerRight && p1.vx > 0)
