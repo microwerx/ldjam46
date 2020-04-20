@@ -313,10 +313,10 @@ class App {
     //   this.reset();
     // }
 
-    if (xor.input.mouseOver && xor.input.mouseButtons.get(0))
-      this.ENTERbutton = 1;
-    else
-      this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
+    // if (xor.input.mouseOver && xor.input.mouseButtons.get(0))
+    //   this.ENTERbutton = 1;
+    // else
+    this.ENTERbutton = xor.input.checkKeys(['Enter', 'Return']);
 
     if (this.ENTERbutton) xor.input.resetKeys(['Enter', 'Return']);
     if (this.help) {
