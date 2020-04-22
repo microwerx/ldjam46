@@ -32,8 +32,8 @@ class App {
   xor = new LibXOR(this.parentID);
   readonly width = 640;
   readonly height = 512;
-  // hudCanvas = document.createElement('canvas');
-  hudCanvas = new OffscreenCanvas(this.width, this.height);
+  hudCanvas = document.createElement('canvas');
+  // hudCanvas = new OffscreenCanvas(this.width, this.height);
   hud2D: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D;
   theta = 0;
   mouse = Vector3.make(0, 0, 0);

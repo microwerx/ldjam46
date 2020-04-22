@@ -418,7 +418,7 @@ declare class App {
     xor: LibXOR;
     readonly width = 640;
     readonly height = 512;
-    hudCanvas: OffscreenCanvas;
+    hudCanvas: HTMLCanvasElement;
     hud2D: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
     theta: number;
     mouse: Vector3;

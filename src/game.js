@@ -1266,8 +1266,7 @@ class App {
         this.xor = new LibXOR(this.parentID);
         this.width = 640;
         this.height = 512;
-        // hudCanvas = document.createElement('canvas');
-        this.hudCanvas = new OffscreenCanvas(this.width, this.height);
+        this.hudCanvas = document.createElement('canvas');
         this.theta = 0;
         this.mouse = Vector3.make(0, 0, 0);
         this.click = Vector3.make(0, 0, 0);
